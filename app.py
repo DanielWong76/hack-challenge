@@ -201,6 +201,8 @@ def update_profile(profile_id):
     Endpoint for updating a profile
     """
     profile = Profile.query.filter_by(id = profile_id).first()
+    if profile is None:
+        return failure_response("Profile not found!")
     body = json.loads(request.data)
     first = body.get("first")
     last = body.get("last")
@@ -291,6 +293,8 @@ def update_job(job_id):
     Endpoint for updating a job
     """
     job = Job.query.filter_by(id = job_id).first()
+    if job is None:
+        return failure_response("Job not found!")
     body = json.loads(request.data)
     title = body.get("title")
     description = body.get("description")
@@ -330,6 +334,73 @@ def delete_job(job_id):
     db.session.delete(job)
     db.session.commit()
     return success_response(job.serialize())@app.route("/api/profile/")
+
+#-----------------RATINGS--------------------------------------------
+
+@app.route("/api/rating/")
+def get_ratings():
+    """
+    Endpoint for getting all ratings
+    """
+    ratings = [rating.serialize() for rating in Rating.query.all()]
+    return success_response({"ratings": ratings})
+
+@app.route("/api/rating/", methods=["POST"])
+def create_rating():
+    """
+    Endpoint for creating a rating
+    """
+    body = json.loads(request.data)
+    rate = body.get("rate")
+    description = body.get("description")
+    if rate is None or description is None:
+        return failure_response("Missing one of the required fields", 400)
+    rating = Rating(rate = rate, description = description)
+    db.session.add(rating)
+    db.session.commit()
+    return success_response(rating.serialize(), 201)
+
+@app.route("/api/rating/<int:rating_id>/", methods = ["POST"])
+def update_rating(rating_id):
+    """
+    Endpoint for updating a rating
+    """
+    rating = Rating.query.filter_by(id = rating_id).first()
+    if rating is None:
+        return failure_response("Rating not found!")
+    body = json.loads(request.data)
+    rate = body.get("rate")
+    description = body.get("description")
+    if rate is None or description is None:
+        return failure_response("Missing one of the required fields", 400)
+    rating.rate = rate 
+    rating.description = description 
+    db.session.commit()
+    return success_response(rating.serialize(), 201)
+
+@app.route("/api/rating/<int:rating_id>/")
+def get_rating(rating_id):
+    """
+    Endpoint for getting a rating by id
+    """
+    rating = Rating.query.filter_by(id = rating_id).first()
+    if rating is None:
+        return failure_response("Rating not found!")
+    return success_response(rating.serialize())
+
+@app.route("/api/rating/<int:rating_id>/", methods=["DELETE"])
+def delete_rating(rating_id):
+    """
+    Endpoint for deleting a rating by id
+    """
+    rating = Rating.query.filter_by(id = rating_id).first()
+    if rating is None:
+        return failure_response("Rating not found!")
+    db.session.delete(rating)
+    db.session.commit()
+    return success_response(rating.serialize())
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

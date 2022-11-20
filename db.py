@@ -249,12 +249,14 @@ class Rating(db.Model):
     
     def serialize(self):
         return{
+            "id": self.id,
             "rate": self.rate,
             "description": self.description
         }
     
     def simple_serialize(self):
         return{
+            "id": self.id,
             "rate": self.rate,
             "description": self.description
         }
