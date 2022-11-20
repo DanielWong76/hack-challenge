@@ -4,7 +4,16 @@ import os
 
 import bcrypt
 from flask_sqlalchemy import SQLAlchemy
-
+import base64
+import boto3
+from datetime import datetime 
+import io
+from io import BytesIO
+from mimetypes import guess_type, guess_extension
+from PIL import Image
+import random
+import re
+import string
 db = SQLAlchemy()
 
 
@@ -72,8 +81,39 @@ class Rating(db.Model):
     Rating Model
     """
     __tablename__ = "rating"
-    id = db.Column(db.Integer, primary_key=True, autoincrement = True)
-    stars = db.Column(db.Integer, nullable = False)
-    description = db.Column(db.String, nullable = True)
-    poster_id = db.Column(db.Integer, nullable = True)
-    receiver_id = db.Column(db.Integer, nullable = False)
+    id = db.Column(db.Integer, primary_key = True, autoincrement = True )
+    rate = db.Column(db.Integer, nullable = False)
+    description = db.Column(db.String, nullable = False)
+    #poster_id
+    #postee_id
+
+    def __init__(self, **kwargs):
+        """
+        Initializes a rating object
+        """
+        self.rate = kwargs.get("rate")
+        self.description = kwargs.get("description")
+    
+    def serialize(self):
+        return{
+            "rate": self.rate,
+            "description": self.description
+        }
+    
+    def simple_serialize(self):
+        return{
+            "rate": self.rate,
+            "description": self.description
+        }
+
+    
+
+
+
+
+    
+
+        
+
+
+

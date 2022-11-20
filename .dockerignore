@@ -1,0 +1,6 @@
+.env
+__pycache__
+side_quest.db
+.gitignore
+venv
+

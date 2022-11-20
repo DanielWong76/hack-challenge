@@ -1,0 +1,8 @@
+version: "3"
+
+services:
+  hack:
+    image: jc2742/hack
+    env_file: .env
+    ports:
+      - "8000:8000"
