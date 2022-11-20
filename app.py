@@ -2,7 +2,7 @@ import os
 from ast import Assign
 from multiprocessing.util import ForkAwareThreadLock
 from unittest.mock import NonCallableMagicMock
-from db import db, Profile, Asset
+from db import db, Profile, Asset, Job, Rating
 from flask import Flask, request
 import json
 
@@ -125,6 +125,82 @@ def upload():
     db.session.add(asset)
     db.session.commit()
     return success_response(asset.serialize(), 201)
+
+#-----------------JOBS--------------------------------------------
+
+@app.route("/api/job/")
+def get_jobs():
+    """
+    Endpoint for getting all jobs
+    """
+    jobs = [job.serialize() for job in Job.query.all()]
+    return success_response({"jobs": jobs})
+
+@app.route("/api/job/", methods=["POST"])
+def create_job():
+    """
+    Endpoint for creating a job
+    """
+    body = json.loads(request.data)
+    title = body.get("title")
+    description = body.get("description")
+    location = body.get("location")
+    date_activity = body.get("date_activity")
+    duration = body.get("duration")
+    reward = body.get("reward")
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None:
+        return failure_response("Missing one of the required fields", 400)
+    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward)
+    db.session.add(job)
+    db.session.commit()
+    return success_response(job.serialize(), 201)
+
+@app.route("/api/job/<int:job_id>/", methods = ["POST"])
+def update_job(job_id):
+    """
+    Endpoint for updating a job
+    """
+    job = Job.query.filter_by(id = job_id).first()
+    body = json.loads(request.data)
+    title = body.get("title")
+    description = body.get("description")
+    location = body.get("location")
+    date_activity = body.get("date_activity")
+    duration = body.get("duration")
+    reward = body.get("reward")
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None:
+        return failure_response("Missing one of the required fields", 400)
+    job.title = title 
+    job.description = description 
+    job.location = location 
+    job.date_activity = date_activity 
+    job.duration = duration 
+    job.reward = reward 
+    db.session.commit()
+    return success_response(job.serialize(), 201)
+
+@app.route("/api/job/<int:job_id>/")
+def get_job(job_id):
+    """
+    Endpoint for getting a job by id
+    """
+    job = Job.query.filter_by(id = job_id).first()
+    if job is None:
+        return failure_response("Job not found!")
+    return success_response(job.serialize())
+
+@app.route("/api/job/<int:job_id>/", methods=["DELETE"])
+def delete_job(job_id):
+    """
+    Endpoint for deleting a job by id
+    """
+    job = Job.query.filter_by(id = job_id).first()
+    if job is None:
+        return failure_response("Job not found!")
+    db.session.delete(job)
+    db.session.commit()
+    return success_response(job.serialize())
+
 
 
 

@@ -154,6 +154,8 @@ class Asset(db.Model):
             "url": f"{self.base_url}/{self.salt}.{self.extension}",
             "created_at": str(self.created_at)
         }
+    
+#-----------------JOBS--------------------------------------------
 
 class Job(db.Model):
     """
@@ -165,7 +167,7 @@ class Job(db.Model):
     description = db.Column(db.String, nullable = False)
     location = db.Column(db.String, nullable = False)
     date_created = db.Column(db.DateTime, nullable = False)
-    date_activity = db.Column(db.DateTime, nullable = False)
+    date_activity = db.Column(db.String, nullable = False)
     duration = db.Column(db.Integer, nullable = False)
     reward = db.Column(db.String, nullable = False)
     done = db.Column(db.Boolean, nullable = False)
@@ -194,10 +196,11 @@ class Job(db.Model):
         Serializes a job object
         """
         return{
+            "id": self.id,
             "title": self.title,
             "description": self.description,
             "location": self.location,
-            "date_created": self.date_created,
+            "date_created": str(self.date_created),
             "date_activity": self.date_activity,
             "duration": self.duration,
             "reward": self.reward,
@@ -210,16 +213,55 @@ class Job(db.Model):
         Serializes a job object
         """
         return{
+            "id": self.id,
             "title": self.title,
             "description": self.description,
             "location": self.location,
-            "date_created": self.date_created,
+            "date_created": str(self.date_created),
             "date_activity": self.date_activity,
             "duration": self.duration,
             "reward": self.reward,
             "done": self.done,
             "taken": self.taken
         }
+
+#-----------------RATINGS--------------------------------------------
+    
+class Rating(db.Model):
+    """
+    Rating Model
+    """
+    __tablename__ = "rating"
+    id = db.Column(db.Integer, primary_key = True, autoincrement = True )
+    rate = db.Column(db.Integer, nullable = False)
+    description = db.Column(db.String, nullable = False)
+    #poster_id
+    #postee_id
+
+    def __init__(self, **kwargs):
+        """
+        Initializes a rating object
+        """
+        self.rate = kwargs.get("rate")
+        self.description = kwargs.get("description")
+    
+    def serialize(self):
+        return{
+            "rate": self.rate,
+            "description": self.description
+        }
+    
+    def simple_serialize(self):
+        return{
+            "rate": self.rate,
+            "description": self.description
+        }
+
+    
+
+
+
+
     
 
         
