@@ -16,7 +16,7 @@ import re
 import string
 db = SQLAlchemy()
 
-
+#-----------------PROFILES--------------------------------------------
 class Profile(db.Model):
     """
     Profile Model
@@ -259,6 +259,7 @@ class Rating(db.Model):
             "description": self.description
         }
 
+#-----------------USERS--------------------------------------------
 class User(db.Model):
     """
     User model
