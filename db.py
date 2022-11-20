@@ -17,7 +17,7 @@ db = SQLAlchemy()
 
 class Profile(db.Model):
     """
-    Profile Class
+    Profile Model
     """
     __tablename__ = "profile"
     id =  db.Column(db.Integer, primary_key = True, autoincrement = True)
@@ -154,3 +154,75 @@ class Asset(db.Model):
             "url": f"{self.base_url}/{self.salt}.{self.extension}",
             "created_at": str(self.created_at)
         }
+
+class Job(db.Model):
+    """
+    Job Model
+    """
+    __tablename__ = "job"
+    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    title = db.Column(db.String, nullable = False)
+    description = db.Column(db.String, nullable = False)
+    location = db.Column(db.String, nullable = False)
+    date_created = db.Column(db.DateTime, nullable = False)
+    date_activity = db.Column(db.DateTime, nullable = False)
+    duration = db.Column(db.Integer, nullable = False)
+    reward = db.Column(db.String, nullable = False)
+    done = db.Column(db.Boolean, nullable = False)
+    taken = db.Column(db.Boolean, nullable = False)
+    #poster_id
+    #receiver_id
+    #img_id
+    #potential_id
+
+    def __init__(self, **kwargs):
+        """
+        Initializes a job object
+        """
+        self.title = kwargs.get("title")
+        self.description = kwargs.get("description")
+        self.location = kwargs.get("location")
+        self.date_created = datetime.now()
+        self.date_activity = kwargs.get("date_activity")
+        self.duration = kwargs.get("duration")
+        self.reward = kwargs.get("reward")
+        self.done = False
+        self.taken = False
+    
+    def serialize(self):
+        """
+        Serializes a job object
+        """
+        return{
+            "title": self.title,
+            "description": self.description,
+            "location": self.location,
+            "date_created": self.date_created,
+            "date_activity": self.date_activity,
+            "duration": self.duration,
+            "reward": self.reward,
+            "done": self.done,
+            "taken": self.taken
+        }
+
+    def simple_serialize(self):
+        """
+        Serializes a job object
+        """
+        return{
+            "title": self.title,
+            "description": self.description,
+            "location": self.location,
+            "date_created": self.date_created,
+            "date_activity": self.date_activity,
+            "duration": self.duration,
+            "reward": self.reward,
+            "done": self.done,
+            "taken": self.taken
+        }
+    
+
+        
+
+
+
