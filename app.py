@@ -330,3 +330,6 @@ def delete_job(job_id):
     db.session.delete(job)
     db.session.commit()
     return success_response(job.serialize())@app.route("/api/profile/")
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=True)
