@@ -33,7 +33,7 @@ class User(db.Model):
     email = db.Column(db.String, nullable = False)
     phone_number = db.Column(db.Integer, nullable = False)
     #user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
-    #image_id = db.Column(db.Integer, db.ForeignKey("asset.id"), nullable =False)
+    images = db.relationship("Asset", cascade="delete")
     # rating = db.relationship("Rating", cascade="delete")
     #jobs = db.relationship("Job")
     #chat
@@ -66,6 +66,7 @@ class User(db.Model):
             "last" : self.last,
             "email" : self.email,
             "phone_number" : self.phone_number,
+            "assets" :[i.serialize() for i in self.images]
         }
 
     def simple_serialize(self):
@@ -136,15 +137,15 @@ class Asset(db.Model):
     width = db.Column(db.Integer, nullable = False)
     height = db.Column(db.Integer, nullable = False)
     created_at = db.Column(db.DateTime, nullable = False)
-
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
 
     def __init__(self, **kwargs):
         """
         Initializes an asset object
         """
-        self.create(kwargs.get("image_data"))
+        self.create(kwargs.get("image_data"), kwargs.get("user_id"))
     
-    def create(self, image_data):
+    def create(self, image_data, user_id):
         """
         Given an image in base64 encoding, does the following
         1. Rejects the image if it is not a supported filetype
@@ -173,6 +174,7 @@ class Asset(db.Model):
             self.width = img.width
             self.height = img.height
             self.created_at = datetime.datetime.now()
+            self.user_id = user_id
 
             img_filename = f"{self.salt}.{self.extension}"
             self.upload(img, img_filename)
@@ -207,7 +209,7 @@ class Asset(db.Model):
         """
         return {
             "url": f"{self.base_url}/{self.salt}.{self.extension}",
-            "created_at": str(self.created_at)
+            "created_at": str(self.created_at),
         }
     
 #-----------------JOBS--------------------------------------------

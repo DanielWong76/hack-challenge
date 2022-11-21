@@ -227,8 +227,16 @@ def delete_user(user_id):
 
 #-----------------IMAGES--------------------------------------------
 
-@app.route("/api/upload/", methods=["POST"])
-def upload():
+@app.route("/api/asset/")
+def get_assets():
+    """
+    Endpoint for getting all assets
+    """
+    assets = [asset.serialize() for asset in Asset.query.all()]
+    return success_response({"assets": assets})
+
+@app.route("/api/user/<int:user_id>/upload/", methods=["POST"])
+def upload(user_id):
     """
     Endpoint for uploading an image to AWS given its base64 form,
     then storing/returning the URL of that image
@@ -238,10 +246,20 @@ def upload():
     if image_data is None:
         return failure_response("No base64 image found")
     
-    asset = Asset(image_data = image_data)
+    asset = Asset(image_data = image_data, user_id = user_id)
     db.session.add(asset)
     db.session.commit()
     return success_response(asset.serialize(), 201)
+
+@app.route("/api/asset/<int:asset_id>/")
+def get_asset(asset_id):
+    """
+    Endpoint for getting a asset by id
+    """
+    asset = Asset.query.filter_by(id = asset_id).first()
+    if asset is None:
+        return failure_response("Asset not found!")
+    return success_response(asset.serialize())
 
 #-----------------JOBS--------------------------------------------
 
