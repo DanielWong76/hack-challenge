@@ -4,8 +4,7 @@ DAO (Data Access Object) file
 Helper file containing functions for accessing data in our database
 """
 
-from db import db
-from db import User
+from db import db, User
 
 
 def get_user_by_email(email):
@@ -41,7 +40,7 @@ def verify_credentials(email, password):
     return optional_user.verify_password(password), optional_user
 
 
-def create_user(email, password):
+def create_user(email, password, first, last, phone_number):
     """
     Creates a User object in the database
 
@@ -52,7 +51,7 @@ def create_user(email, password):
     if optional_user is not None:
         return False, optional_user
 
-    user = User(email=email, password=password)
+    user = User(email = email, password = password, first = first, last = last, phone_number = phone_number)
 
     db.session.add(user)
     db.session.commit()

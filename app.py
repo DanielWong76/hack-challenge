@@ -2,7 +2,7 @@ import os
 from ast import Assign
 from multiprocessing.util import ForkAwareThreadLock
 from unittest.mock import NonCallableMagicMock
-from db import db, Profile, Asset, Job, Rating
+from db import db, Asset, Job, Rating, User
 from flask import Flask, request
 import json
 import users_dao
@@ -57,7 +57,8 @@ def hello_world():
     """
     return "Hello World!"
  
-#-----------------AUTH--------------------------------------------
+#-----------------AUTH/USERS--------------------------------------------
+
 @app.route("/api/register/", methods=["POST"])
 def register_account():
     """
@@ -66,11 +67,14 @@ def register_account():
     body = json.loads(request.data)
     email = body.get("email")
     password = body.get("password")
+    first = body.get("first")
+    last = body.get("last")
+    phone_number = body.get("phone_number")
  
-    if email is None or password is None:
-        return failure_response("Missing email or password", 400)
+    if email is None or password is None or first is None or last is None  or phone_number is None:
+        return failure_response("Missing first name, last name, email, password, or phone number", 400)
  
-    success, user = users_dao.create_user(email, password)
+    success, user = users_dao.create_user( email, password, first, last, phone_number)
     if not success:
         return failure_response("User already exists", 400)
    
@@ -79,7 +83,7 @@ def register_account():
             "session_token": user.session_token,
             "session_expiration": str(user.session_expiration),
             "update_token": user.update_token
-        }
+        }, 201
     )
  
  
@@ -168,21 +172,22 @@ def logout():
     return success_response({"message": "You have successfully logged out"})
 
 
-#-----------------PROFILES--------------------------------------------
+@app.route("/api/user/")
+def get_users():
+    """
+    Endpoint for the getting all users
+    """
+    user = [user.serialize() for user in User.query.all()]
+    return success_response({"user": user})
 
-@app.route("/api/profile/")
-def get_profiles():
+@app.route("/api/user/<int:user_id>/", methods = ["POST"])
+def update_user(user_id):
     """
-    Endpoint for the getting all Profiles
+    Endpoint for updating a user
     """
-    profile = [profile.serialize() for profile in Profile.query.all()]
-    return success_response({"profile": profile})
-
-@app.route("/api/profile/", methods = ["POST"])
-def create_profile():
-    """
-    Endpoint for creating a profile
-    """
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
     body = json.loads(request.data)
     first = body.get("first")
     last = body.get("last")
@@ -190,54 +195,34 @@ def create_profile():
     phone_number = body.get("phone_number")
     if first is None or last is None or email is None or phone_number is None:
         return failure_response("Missing first name, last name, email, or phone number", 400)
-    profile = Profile(first = first, last = last, email = email, phone_number = phone_number)
-    db.session.add(profile)
+    user.first = first 
+    user.last = last 
+    user.email = email 
+    user.phone_number = phone_number 
     db.session.commit()
-    return success_response(profile.serialize(), 201)
+    return success_response(user.serialize(), 200)
 
-@app.route("/api/profile/<int:profile_id>/", methods = ["POST"])
-def update_profile(profile_id):
+@app.route("/api/user/<int:user_id>/")
+def get_user(user_id):
     """
-    Endpoint for updating a profile
+    Endpoint for getting a user by id
     """
-    profile = Profile.query.filter_by(id = profile_id).first()
-    if profile is None:
-        return failure_response("Profile not found!")
-    body = json.loads(request.data)
-    first = body.get("first")
-    last = body.get("last")
-    email = body.get("email")
-    phone_number = body.get("phone_number")
-    if first is None or last is None or email is None or phone_number is None:
-        return failure_response("Missing first name, last name, email, or phone number", 400)
-    profile.first = first 
-    profile.last = last 
-    profile.email = email 
-    profile.phone_number = phone_number 
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    return success_response(user.serialize())
+
+@app.route("/api/user/<int:user_id>/", methods=["DELETE"])
+def delete_user(user_id):
+    """
+    Endpoint for deleting a user by id
+    """
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    db.session.delete(user)
     db.session.commit()
-    return success_response(profile.serialize(), 201)
-
-@app.route("/api/profile/<int:profile_id>/")
-def get_profile(profile_id):
-    """
-    Endpoint for getting a profile by id
-    """
-    profile = Profile.query.filter_by(id = profile_id).first()
-    if profile is None:
-        return failure_response("Profile not found!")
-    return success_response(profile.serialize())
-
-@app.route("/api/profile/<int:profile_id>/", methods=["DELETE"])
-def delete_profile(profile_id):
-    """
-    Endpoint for deleting a profile by id
-    """
-    profile = Profile.query.filter_by(id = profile_id).first()
-    if profile is None:
-        return failure_response("Profile not found!")
-    db.session.delete(profile)
-    db.session.commit()
-    return success_response(profile.serialize())
+    return success_response(user.serialize())
     
 
 #-----------------IMAGES--------------------------------------------
