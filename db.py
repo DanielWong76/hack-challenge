@@ -15,6 +15,32 @@ import re
 import string
 db = SQLAlchemy()
 
+#-----------------TABLES-------------------------------------------
+association_table_poster = db.Table("association_poster", db.Model.metadata,
+    db.Column("job_id", db.Integer, db.ForeignKey("job.id")),
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
+)
+
+association_table_receiver = db.Table("association_receiver", db.Model.metadata,
+    db.Column("job_id", db.Integer, db.ForeignKey("job.id")),
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
+)
+
+association_table_potential = db.Table("association_potential", db.Model.metadata,
+    db.Column("job_id", db.Integer, db.ForeignKey("job.id")),
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
+)
+
+association_table_rating_poster = db.Table("association_rating_poster", db.Model.metadata,
+    db.Column("rating_id", db.Integer, db.ForeignKey("rating.id")),
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
+)
+
+association_table_rating_postee = db.Table("association_rating_postee", db.Model.metadata,
+    db.Column("rating_id", db.Integer, db.ForeignKey("rating.id")),
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
+)
+
 #-----------------USERS--------------------------------------------
 class User(db.Model):
     """
@@ -32,10 +58,14 @@ class User(db.Model):
     last = db.Column(db.String, nullable = False)
     email = db.Column(db.String, nullable = False)
     phone_number = db.Column(db.Integer, nullable = False)
-    #user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
     images = db.relationship("Asset", cascade="delete")
-    # rating = db.relationship("Rating", cascade="delete")
-    #jobs = db.relationship("Job")
+
+    rating_as_poster = db.relationship("Rating", secondary=association_table_rating_poster, back_populates='poster')
+    rating_as_postee = db.relationship("Rating", secondary=association_table_rating_postee, back_populates='postee')
+
+    job_as_poster = db.relationship("Job", secondary=association_table_poster, back_populates='poster')
+    job_as_receiver = db.relationship("Job", secondary=association_table_receiver, back_populates='receiver')
+    job_as_potential = db.relationship("Job", secondary=association_table_potential, back_populates='potential')
     #chat
 
     # Session information
@@ -60,13 +90,18 @@ class User(db.Model):
         Serializes an Profile object
         """
         return {
-            "email": self.email,
             "id" : self.id,
+            "email": self.email,
             "first" : self.first,
             "last" : self.last,
             "email" : self.email,
             "phone_number" : self.phone_number,
-            "assets" :[i.serialize() for i in self.images]
+            "assets" :[i.simple_serialize() for i in self.images],
+            "job_as_poster": [p.simple_serialize() for p in self.job_as_poster],
+            "job_as_receiver": [r.simple_serialize() for r in self.job_as_receiver],
+            "job_as_potential": [p.simple_serialize() for p in self.job_as_potential],
+            "rating_as_poster": [r.simple_serialize() for r in self.rating_as_poster],
+            "rating_as_postee":  [r.simple_serialize() for r in self.rating_as_postee]
         }
 
     def simple_serialize(self):
@@ -74,12 +109,9 @@ class User(db.Model):
         Serializes an Profile object without any other class
         """
         return {
-            "email": self.email,
             "id" : self.id,
             "first" : self.first,
             "last" : self.last,
-            "email" : self.email,
-            "phone_number" : self.phone_number,
         }
 
     def _urlsafe_base_64(self):
@@ -137,15 +169,16 @@ class Asset(db.Model):
     width = db.Column(db.Integer, nullable = False)
     height = db.Column(db.Integer, nullable = False)
     created_at = db.Column(db.DateTime, nullable = False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = True)
+    job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable = True)
 
     def __init__(self, **kwargs):
         """
         Initializes an asset object
         """
-        self.create(kwargs.get("image_data"), kwargs.get("user_id"))
+        self.create(kwargs.get("image_data"), kwargs.get("user_id", None), kwargs.get("job_id", None))
     
-    def create(self, image_data, user_id):
+    def create(self, image_data, user_id, job_id):
         """
         Given an image in base64 encoding, does the following
         1. Rejects the image if it is not a supported filetype
@@ -174,8 +207,10 @@ class Asset(db.Model):
             self.width = img.width
             self.height = img.height
             self.created_at = datetime.datetime.now()
-            self.user_id = user_id
-
+            if user_id is not None:
+                self.user_id = user_id
+            if job_id is not None:
+                self.job_id = job_id
             img_filename = f"{self.salt}.{self.extension}"
             self.upload(img, img_filename)
         except Exception as e:
@@ -208,6 +243,19 @@ class Asset(db.Model):
         Serializes an asset object
         """
         return {
+            "id" : self.id,
+            "url": f"{self.base_url}/{self.salt}.{self.extension}",
+            "created_at": str(self.created_at),
+            "job_id": self.job_id,
+            "user_id": self.user_id
+        }
+    
+    def simple_serialize(self):
+        """
+        Serializes an asset object without relations
+        """
+        return {
+            "id" : self.id,
             "url": f"{self.base_url}/{self.salt}.{self.extension}",
             "created_at": str(self.created_at),
         }
@@ -229,10 +277,10 @@ class Job(db.Model):
     reward = db.Column(db.String, nullable = False)
     done = db.Column(db.Boolean, nullable = False)
     taken = db.Column(db.Boolean, nullable = False)
-    #poster_id
-    #receiver_id
-    #img_id
-    #potential_id
+    poster = db.relationship("User", secondary=association_table_poster, back_populates='job_as_poster')
+    receiver =  db.relationship("User", secondary=association_table_receiver, back_populates='job_as_receiver')
+    images = db.relationship("Asset", cascade="delete")
+    potential = db.relationship("User", secondary=association_table_potential, back_populates='job_as_potential')
 
     def __init__(self, **kwargs):
         """
@@ -245,6 +293,7 @@ class Job(db.Model):
         self.date_activity = kwargs.get("date_activity")
         self.duration = kwargs.get("duration")
         self.reward = kwargs.get("reward")
+        self.poster += [kwargs.get("poster")]
         self.done = False
         self.taken = False
     
@@ -262,7 +311,11 @@ class Job(db.Model):
             "duration": self.duration,
             "reward": self.reward,
             "done": self.done,
-            "taken": self.taken
+            "taken": self.taken,
+            "asset": [i.simple_serialize() for i in self.images],
+            "poster": [p.simple_serialize() for p in self.poster],
+            "receiver": [r.simple_serialize() for r in self.receiver],
+            "potential": [p.simple_serialize() for p in self.potential]
         }
 
     def simple_serialize(self):
@@ -272,14 +325,8 @@ class Job(db.Model):
         return{
             "id": self.id,
             "title": self.title,
-            "description": self.description,
-            "location": self.location,
-            "date_created": str(self.date_created),
-            "date_activity": self.date_activity,
-            "duration": self.duration,
             "reward": self.reward,
             "done": self.done,
-            "taken": self.taken
         }
 
 #-----------------RATINGS--------------------------------------------
@@ -292,8 +339,9 @@ class Rating(db.Model):
     id = db.Column(db.Integer, primary_key = True, autoincrement = True )
     rate = db.Column(db.Integer, nullable = False)
     description = db.Column(db.String, nullable = False)
-    #poster_id
-    #postee_id
+    
+    poster = db.relationship("User", secondary=association_table_rating_poster, back_populates='rating_as_poster')
+    postee = db.relationship("User", secondary=association_table_rating_postee, back_populates='rating_as_postee')
 
     def __init__(self, **kwargs):
         """
@@ -301,16 +349,20 @@ class Rating(db.Model):
         """
         self.rate = kwargs.get("rate")
         self.description = kwargs.get("description")
+        self.poster += [kwargs.get("poster")]
+        self.postee += [kwargs.get("postee")]
     
     def serialize(self):
-        return{
-            "id": self.id,
+        return {
+            "id" : self.id,
             "rate": self.rate,
-            "description": self.description
+            "description": self.description,
+            "poster": [p.simple_serialize() for p in self.poster],
+            "postee": [p.simple_serialize() for p in self.postee],
         }
     
     def simple_serialize(self):
-        return{
+        return {
             "id": self.id,
             "rate": self.rate,
             "description": self.description
