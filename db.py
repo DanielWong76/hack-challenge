@@ -14,6 +14,7 @@ from PIL import Image
 import random
 import re
 import string
+
 db = SQLAlchemy()
 
 
@@ -317,3 +318,35 @@ class User(db.Model):
         Verifies the update token of a user
         """
         return update_token == self.update_token
+
+class Chat(db.Model):
+    """
+    Model to represent Chat
+    """
+    __tablename__ = "chat"
+    id = db.Column(db.Integer, primary_key=True, autoincrement = True)
+    sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    message = db.Column(db.String, nullable = False)
+    time = db.Column(db.DateTime, nullable = False)
+
+    def __init__(self, **kwargs):
+        """
+        Creates a chat object
+        """
+        self.sender_id = kwargs.get("sender_id")
+        self.receiver_id = kwargs.get("receiver_id")
+        self.message = kwargs.get("message")
+        self.time = kwargs.get("time")
+    
+    def serialize(self):
+        """
+        Serializes a Chat object
+        """
+        return {
+            "id": self.id,
+            "sender_id": self.sender_id,
+            "receiver_id": self.receiver_id,
+            "message": self.message
+            "time": self.time
+        }
