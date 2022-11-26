@@ -2,7 +2,7 @@ import os
 from ast import Assign
 from multiprocessing.util import ForkAwareThreadLock
 from unittest.mock import NonCallableMagicMock
-from db import db, Profile, Asset, Job, Rating
+from db import db, Asset, Job, Rating, User
 from flask import Flask, request
 import json
 import users_dao
@@ -60,7 +60,8 @@ def hello_world():
     """
     return "Hello World!"
  
- 
+#-----------------AUTH/USERS--------------------------------------------
+
 @app.route("/api/register/", methods=["POST"])
 def register_account():
     """
@@ -69,11 +70,14 @@ def register_account():
     body = json.loads(request.data)
     email = body.get("email")
     password = body.get("password")
+    first = body.get("first")
+    last = body.get("last")
+    phone_number = body.get("phone_number")
  
-    if email is None or password is None:
-        return failure_response("Missing email or password", 400)
+    if email is None or password is None or first is None or last is None  or phone_number is None:
+        return failure_response("Missing first name, last name, email, password, or phone number", 400)
  
-    success, user = users_dao.create_user(email, password)
+    success, user = users_dao.create_user( email, password, first, last, phone_number)
     if not success:
         return failure_response("User already exists", 400)
    
@@ -82,7 +86,7 @@ def register_account():
             "session_token": user.session_token,
             "session_expiration": str(user.session_expiration),
             "update_token": user.update_token
-        }
+        }, 201
     )
  
  
@@ -170,19 +174,23 @@ def logout():
  
     return success_response({"message": "You have successfully logged out"})
 
-@app.route("/api/profile/")
-def get_profiles():
-    """
-    Endpoint for the getting all Profiles
-    """
-    profile = [profile.serialize() for profile in Profile.query.all()]
-    return success_response({"profile": profile})
 
-@app.route("/api/profile/", methods = ["POST"])
-def create_profile():
+@app.route("/api/user/")
+def get_users():
     """
-    Endpoint for creating a profile
+    Endpoint for the getting all users
     """
+    user = [user.serialize() for user in User.query.all()]
+    return success_response({"user": user})
+
+@app.route("/api/user/<int:user_id>/", methods = ["POST"])
+def update_user(user_id):
+    """
+    Endpoint for updating a user
+    """
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
     body = json.loads(request.data)
     first = body.get("first")
     last = body.get("last")
@@ -190,71 +198,94 @@ def create_profile():
     phone_number = body.get("phone_number")
     if first is None or last is None or email is None or phone_number is None:
         return failure_response("Missing first name, last name, email, or phone number", 400)
-    profile = Profile(first = first, last = last, email = email, phone_number = phone_number)
-    db.session.add(profile)
+    user.first = first 
+    user.last = last 
+    user.email = email 
+    user.phone_number = phone_number 
     db.session.commit()
-    return success_response(profile.serialize(), 201)
+    return success_response(user.serialize(), 200)
 
-@app.route("/api/profile/<int:profile_id>/", methods = ["POST"])
-def update_profile(profile_id):
+@app.route("/api/user/<int:user_id>/")
+def get_user(user_id):
     """
-    Endpoint for updating a profile
+    Endpoint for getting a user by id
     """
-    profile = Profile.query.filter_by(id = profile_id).first()
-    body = json.loads(request.data)
-    first = body.get("first")
-    last = body.get("last")
-    email = body.get("email")
-    phone_number = body.get("phone_number")
-    if first is None or last is None or email is None or phone_number is None:
-        return failure_response("Missing first name, last name, email, or phone number", 400)
-    profile.first = first 
-    profile.last = last 
-    profile.email = email 
-    profile.phone_number = phone_number 
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    return success_response(user.serialize())
+
+@app.route("/api/user/<int:user_id>/", methods=["DELETE"])
+def delete_user(user_id):
+    """
+    Endpoint for deleting a user by id
+    """
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    db.session.delete(user)
     db.session.commit()
-    return success_response(profile.serialize(), 201)
-
-@app.route("/api/profile/<int:profile_id>/")
-def get_profile(profile_id):
-    """
-    Endpoint for getting a profile by id
-    """
-    profile = Profile.query.filter_by(id = profile_id).first()
-    if profile is None:
-        return failure_response("Profile not found!")
-    return success_response(profile.serialize())
-
-@app.route("/api/profile/<int:profile_id>/", methods=["DELETE"])
-def delete_profile(profile_id):
-    """
-    Endpoint for deleting a profile by id
-    """
-    profile = Profile.query.filter_by(id = profile_id).first()
-    if profile is None:
-        return failure_response("Profile not found!")
-    db.session.delete(profile)
-    db.session.commit()
-    return success_response(profile.serialize())
+    return success_response(user.serialize())
     
 
 #-----------------IMAGES--------------------------------------------
 
-@app.route("/api/upload/", methods=["POST"])
-def upload():
+@app.route("/api/asset/")
+def get_assets():
+    """
+    Endpoint for getting all assets
+    """
+    assets = [asset.serialize() for asset in Asset.query.all()]
+    return success_response({"assets": assets})
+
+@app.route("/api/user/<int:user_id>/upload/", methods=["POST"])
+def upload_user(user_id):
     """
     Endpoint for uploading an image to AWS given its base64 form,
-    then storing/returning the URL of that image
+    then storing/returning the URL of that image for users
     """
     body = json.loads(request.data)
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+
     image_data = body.get("image_data")
-    if image_data is None:
+    if image_data is None :
         return failure_response("No base64 image found")
     
-    asset = Asset(image_data = image_data)
+    asset = Asset(image_data = image_data, user_id = user_id)
     db.session.add(asset)
     db.session.commit()
     return success_response(asset.serialize(), 201)
+
+@app.route("/api/job/<int:job_id>/upload/", methods=["POST"])
+def upload_job(job_id):
+    """
+    Endpoint for uploading an image to AWS given its base64 form,
+    then storing/returning the URL of that image for jobs
+    """
+    body = json.loads(request.data)
+    image_data = body.get("image_data")
+    job = Job.query.filter_by(id = job_id).first()
+    if job is None:
+        return failure_response("Jser not found!")
+    if image_data is None:
+        return failure_response("No base64 image found")
+    
+    asset = Asset(image_data = image_data, job_id = job_id)
+    db.session.add(asset)
+    db.session.commit()
+    return success_response(asset.serialize(), 201)
+
+@app.route("/api/asset/<int:asset_id>/")
+def get_asset(asset_id):
+    """
+    Endpoint for getting a asset by id
+    """
+    asset = Asset.query.filter_by(id = asset_id).first()
+    if asset is None:
+        return failure_response("Asset not found!")
+    return success_response(asset.serialize())
 
 #-----------------JOBS--------------------------------------------
 
@@ -266,11 +297,15 @@ def get_jobs():
     jobs = [job.serialize() for job in Job.query.all()]
     return success_response({"jobs": jobs})
 
-@app.route("/api/job/", methods=["POST"])
-def create_job():
+@app.route("/api/user/<int:user_id>/job/", methods=["POST"])
+def create_job(user_id):
     """
     Endpoint for creating a job
     """
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+
     body = json.loads(request.data)
     title = body.get("title")
     description = body.get("description")
@@ -280,9 +315,55 @@ def create_job():
     reward = body.get("reward")
     if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None:
         return failure_response("Missing one of the required fields", 400)
-    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward)
+    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user)
     db.session.add(job)
     db.session.commit()
+    return success_response(job.serialize(), 201)
+
+@app.route("/api/user/<int:user_id>/job/<int:job_id>/", methods= ["POST"])
+def add_job(user_id, job_id):
+    """
+    Endpoint for adding a potential to a job
+    """
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+
+    job = Job.query.filter_by(id = job_id).first()
+    if job is None:
+        return failure_response("Job not found!")
+
+    if user in job.potential:
+        return failure_response("User already added this job!")
+
+    job.potential += [user]
+    db.session.commit()
+    return success_response(user.serialize(), 201)
+
+@app.route("/api/job/<int:job_id>/user/<int:user_id>/", methods= ["POST"])
+def pick_receiver(job_id, user_id):
+    """
+    Endpoint for jobs to pick a empolyer
+    """
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+
+    job = Job.query.filter_by(id = job_id).first()
+    if job is None:
+        return failure_response("Job not found!")
+    
+    if user not in job.potential:
+        return failure_response("This user did not add this job to his/her list!")
+    
+    if job not in user.job_as_potential:
+        return failure_response("errorrrrrr")
+
+    user.job_as_potential.remove(job)
+    job.receiver = [user]
+    job.taken = True
+    db.session.commit()
+
     return success_response(job.serialize(), 201)
 
 @app.route("/api/job/<int:job_id>/", methods = ["POST"])
@@ -291,6 +372,8 @@ def update_job(job_id):
     Endpoint for updating a job
     """
     job = Job.query.filter_by(id = job_id).first()
+    if job is None:
+        return failure_response("Job not found!")
     body = json.loads(request.data)
     title = body.get("title")
     description = body.get("description")
@@ -329,8 +412,89 @@ def delete_job(job_id):
         return failure_response("Job not found!")
     db.session.delete(job)
     db.session.commit()
-    return success_response(job.serialize())@app.route("/api/profile/")
+    return success_response(job.serialize())
 
+#-----------------RATINGS--------------------------------------------
+
+@app.route("/api/rating/")
+def get_ratings():
+    """
+    Endpoint for getting all ratings
+    """
+    ratings = [rating.serialize() for rating in Rating.query.all()]
+    return success_response({"ratings": ratings})
+
+@app.route("/api/user/<int:user_id>/rating/<int:user2_id>/", methods=["POST"])
+def create_rating(user_id, user2_id):
+    """
+    Endpoint for creating a rating where first user rates second user
+    """
+    body = json.loads(request.data)
+    rate = body.get("rate")
+    description = body.get("description")
+    if rate is None or description is None:
+        return failure_response("Missing one of the required fields", 400)
+
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+
+    user2 = User.query.filter_by(id = user2_id).first()
+    if user2 is None:
+        return failure_response("User not found!")
+
+    rating = Rating(rate = rate, description = description, poster = user, postee = user2)
+    db.session.add(rating)
+    db.session.commit()
+    return success_response(rating.serialize(), 201)
+
+@app.route("/api/user/<int:user_id>/rating/<int:rating_id>/", methods = ["POST"])
+def update_rating(user_id, rating_id):
+    """
+    Endpoint for updating a rating
+    """
+    rating = Rating.query.filter_by(id = rating_id).first()
+    if rating is None:
+        return failure_response("Rating not found!")
+    
+    user = User.query.filter_by(id = user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    
+    if user not in rating.poster:
+        return failure_response("User did not make this rating post!")
+
+    body = json.loads(request.data)
+    rate = body.get("rate")
+    description = body.get("description")
+    if rate is None or description is None:
+        return failure_response("Missing one of the required fields", 400)
+    rating.rate = rate 
+    rating.description = description 
+    db.session.commit()
+    return success_response(rating.serialize(), 201)
+
+@app.route("/api/rating/<int:rating_id>/")
+def get_rating(rating_id):
+    """
+    Endpoint for getting a rating by id
+    """
+    rating = Rating.query.filter_by(id = rating_id).first()
+    if rating is None:
+        return failure_response("Rating not found!")
+    return success_response(rating.serialize())
+
+@app.route("/api/rating/<int:rating_id>/", methods=["DELETE"])
+def delete_rating(rating_id):
+    """
+    Endpoint for deleting a rating by id
+    """
+    rating = Rating.query.filter_by(id = rating_id).first()
+    if rating is None:
+        return failure_response("Rating not found!")
+    db.session.delete(rating)
+    db.session.commit()
+    return success_response(rating.serialize())
 
 
 
