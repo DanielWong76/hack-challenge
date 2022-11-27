@@ -77,14 +77,12 @@ def register_account():
     success, user = users_dao.create_user( email, password, first, last, phone_number)
     if not success:
         return failure_response("User already exists", 400)
-   
-    return success_response(
-        {
-            "session_token": user.session_token,
-            "session_expiration": str(user.session_expiration),
-            "update_token": user.update_token
-        }, 201
-    )
+    user_serialize = user.serialize()
+    user_serialize["session_token"] = user.session_token
+    user_serialize["session_expiration"] = str(user.session_expiration)
+    user_serialize["update_token"] = user.update_token
+
+    return success_response(user_serialize , 201)
  
  
  

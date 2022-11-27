@@ -13,6 +13,7 @@ from PIL import Image
 import random
 import re
 import string
+
 db = SQLAlchemy()
 
 #-----------------TABLES-------------------------------------------

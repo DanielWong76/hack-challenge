@@ -1,6 +1,7 @@
 .env
 __pycache__
-side_quest.db
+hack.db
 .gitignore
 venv
 instance 
+chat.py
