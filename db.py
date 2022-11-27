@@ -78,7 +78,6 @@ class User(db.Model):
         """
         Initializes a User object
         """
-        self.email = kwargs.get("email")
         self.password_digest = bcrypt.hashpw(kwargs.get("password").encode("utf8"), bcrypt.gensalt(rounds=13))
         self.first = kwargs.get("first")
         self.last = kwargs.get("last")
