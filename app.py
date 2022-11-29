@@ -2,12 +2,12 @@ import os
 from ast import Assign
 from multiprocessing.util import ForkAwareThreadLock
 from unittest.mock import NonCallableMagicMock
-from db import db, Asset, Job, Rating, User
+from db import db, Asset, Job, Rating, User, Chat
 from flask import Flask, request
 import json
 import users_dao
 import datetime
- 
+from flask_socketio import SocketIO, emit, join_room
  
  
 app = Flask(__name__)
@@ -16,11 +16,12 @@ db_filename = "hack.db"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///%s" % db_filename
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ECHO"] = True
- 
+app.config['SECRET_KEY'] = 'mysecret'
+socketio = SocketIO(app)
+
 db.init_app(app)
 with app.app_context():
     db.create_all()
- 
  
 def success_response(data, code=200):
     """
@@ -74,15 +75,15 @@ def register_account():
     if email is None or password is None or first is None or last is None  or phone_number is None:
         return failure_response("Missing first name, last name, email, password, or phone number", 400)
  
-    success, user = users_dao.create_user( email, password, first, last, phone_number)
+    success, user = users_dao.create_user(email, password, first, last, phone_number)
     if not success:
         return failure_response("User already exists", 400)
     user_serialize = user.serialize()
-    user_serialize["session_token"] = user.session_token
-    user_serialize["session_expiration"] = str(user.session_expiration)
-    user_serialize["update_token"] = user.update_token
+    #user_serialize["session_token"] = user.session_token
+    #user_serialize["session_expiration"] = str(user.session_expiration)
+    #user_serialize["update_token"] = user.update_token
 
-    return success_response(user_serialize , 201)
+    return success_response(user_serialize, 201)
  
  
  
@@ -102,12 +103,9 @@ def login():
  
     if not success:
         return failure_response("Incorrect email or password", 401)
- 
-    return success_response({
-        "session_token": user.session_token,
-        "session_expiration": str(user.session_expiration),
-        "update_token": user.update_token
-    })
+    
+    user_serialize = user.serialize()
+    return success_response(user_serialize)
  
  
 @app.route("/api/session/", methods=["POST"])
@@ -491,7 +489,56 @@ def delete_rating(rating_id):
     db.session.commit()
     return success_response(rating.serialize())
 
+@socketio.on('message', namespace="/chat/")
+def handleMessage(info):
+    """
+    Handles socketio messaging
+    """
+    time = datetime.datetime.now()
+    message = Chat(sender_id = info['sender_id'], receiver_id = info['receiver_id'], message = info['msg'], time = time)
+    session.add(message)
+    session.commit()
+    print('Message: ' + info['msg'])
+    if info['sender_id'] < info['receiver_id']:
+        room = (str(info['sender_id']) + ' ' + str(info['receiver_id']))
+    else:
+        room = join_room(str(info['receiver_id']) + ' ' + str(info['sender_id']))
+    emit('private_message', message.serialize(), json=True, room = room)
 
+@socketio.on('connect', namespace="/chat/")
+def get_chat(info):
+    """
+    Handles socketio for getting all messages between users
+    """
+    sender = User.query.filter_by(id = info['user1_id'])
+    if sender is None: 
+        return failure_response("Sender not found", 400)
+    receiver = User.query.filter_by(id = info['user2_id'])
+    if receiver is None: 
+        return failure_response("Receiver not found", 400)
+    sent_messages = Chat.query.filter_by(sender_id=info['sender_id'], receiver_id=info['receiver_id']).order_by(Chat.time).all()
+    received_messages = Chat.query.filter_by(sender_id=info['receiver_id'], receiver_id=info['sender_id']).order_by(Chat.time).all()
+    new = []
+    i = 0
+    j = 0
+    while (len(received_messages)>j and i < len(sent_messages)):
+        if (received_messages[j].time < sent_messages[i].time):
+            new.append(received_messages[j].serialize())
+            j+=1
+        else:
+            new.append(sent_messages[i].serialize())
+            i+=1
+    if j<len(received_messages):
+        new += received_messages
+    else:
+        new += sent_messages
+    #connect
+    if info['user1_id'] < info['user2_id']:
+        room = (str(info['user1_id']) + ' ' + str(info['user2_id']))
+    else:
+        room = (str(info['user2_id']) + ' ' + str(info['user1_id']))
+    join_room(room)
+    emit('past_messages' ,{'chat': new}, json=True, room=room)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=8000, debug=True)

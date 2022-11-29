@@ -67,7 +67,7 @@ class User(db.Model):
     job_as_poster = db.relationship("Job", secondary=association_table_poster, back_populates='poster')
     job_as_receiver = db.relationship("Job", secondary=association_table_receiver, back_populates='receiver')
     job_as_potential = db.relationship("Job", secondary=association_table_potential, back_populates='potential')
-    #chat
+    chat = db.relationship("Chat", cascade="delete")
 
     # Session information
     session_token = db.Column(db.String, nullable=False, unique=True)
@@ -88,7 +88,7 @@ class User(db.Model):
 
     def serialize(self):
         """
-        Serializes an Profile object
+        Serializes a User object
         """
         return {
             "id" : self.id,
@@ -337,7 +337,7 @@ class Rating(db.Model):
     Rating Model
     """
     __tablename__ = "rating"
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True )
+    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
     rate = db.Column(db.Integer, nullable = False)
     description = db.Column(db.String, nullable = False)
     
@@ -368,4 +368,36 @@ class Rating(db.Model):
             "rate": self.rate,
             "description": self.description
         }
+
+#--------------------Chat------------------------------------------
+class Chat(db.Model):
+    """
+    Chat Model
+    """
+    __tablename__ = "chat"
+    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    message = db.Column(db.String, nullable = False)
+    sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    time = db.Column(db.DateTime, nullable=False)
+
+    def __init__(self, **kwargs):
+        """
+        Creates a Chat object
+        """
+        self.sender_id = kwargs.get("sender_id")
+        self.receiver_id = kwargs.get("receiver_id")
+        self.message = kwargs.get("message")
+        self.time = kwargs.get("time")
+
+    def serialize(self):
+        """
+        Serializes a Chat Object
+        """
+        return {
+            "id": self.id,
+            "message": self.message,
+            "time": self.time
+        }
+
 
