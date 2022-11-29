@@ -78,7 +78,6 @@ class User(db.Model):
         """
         Initializes a User object
         """
-        self.email = kwargs.get("email")
         self.password_digest = bcrypt.hashpw(kwargs.get("password").encode("utf8"), bcrypt.gensalt(rounds=13))
         self.first = kwargs.get("first")
         self.last = kwargs.get("last")
@@ -92,7 +91,6 @@ class User(db.Model):
         """
         return {
             "id" : self.id,
-            "email": self.email,
             "first" : self.first,
             "last" : self.last,
             "email" : self.email,
@@ -113,6 +111,7 @@ class User(db.Model):
             "id" : self.id,
             "first" : self.first,
             "last" : self.last,
+            "email": self.email
         }
 
     def _urlsafe_base_64(self):
@@ -321,7 +320,7 @@ class Job(db.Model):
 
     def simple_serialize(self):
         """
-        Serializes a job object
+        Simple serializes a job object
         """
         return{
             "id": self.id,
@@ -354,6 +353,9 @@ class Rating(db.Model):
         self.postee += [kwargs.get("postee")]
     
     def serialize(self):
+        """
+        Serializes a rating object
+        """
         return {
             "id" : self.id,
             "rate": self.rate,
@@ -363,6 +365,9 @@ class Rating(db.Model):
         }
     
     def simple_serialize(self):
+        """
+        Simple serialize a rating object
+        """
         return {
             "id": self.id,
             "rate": self.rate,
