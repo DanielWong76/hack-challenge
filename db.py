@@ -47,9 +47,9 @@ association_table_chat_sender = db.Table("association_chat_sender", db.Model.met
     db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
 )
 
-association_table_chat_sender = db.Table("association_chat_sender", db.Model.metadata,
-    db.Column("sent_messages_id", db.Integer, db.ForeignKey("chat.id")),
-    db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
+association_table_chat_receiver = db.Table("association_chat_receiver", db.Model.metadata,
+    db.Column("received_messages_id", db.Integer, db.ForeignKey("chat.id")),
+    db.Column("receiver_id", db.Integer, db.ForeignKey("user.id"))
 )
 
 #-----------------USERS--------------------------------------------
@@ -415,7 +415,7 @@ class Chat(db.Model):
         return {
             "id": self.id,
             "message": self.message,
-            "time": self.time
+            "time": str(self.time)
         }
 
 
