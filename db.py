@@ -42,14 +42,9 @@ association_table_rating_postee = db.Table("association_rating_postee", db.Model
     db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
 )
 
-association_table_chat_sender = db.Table("association_chat_sender", db.Model.metadata,
-    db.Column("sent_messages_id", db.Integer, db.ForeignKey("chat.id")),
-    db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
-)
-
-association_table_chat_sender = db.Table("association_chat_sender", db.Model.metadata,
-    db.Column("sent_messages_id", db.Integer, db.ForeignKey("chat.id")),
-    db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
+association_table_chat = db.Table("association_chat", db.Model.metadata,
+    db.Column("chat_id", db.Integer, db.ForeignKey("chat.id")),
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
 )
 
 #-----------------USERS--------------------------------------------
@@ -70,6 +65,7 @@ class User(db.Model):
     email = db.Column(db.String, nullable = False)
     phone_number = db.Column(db.Integer, nullable = False)
     images = db.relationship("Asset", cascade="delete")
+    messages = db.relationship("Message", cascade="delete")
 
     rating_as_poster = db.relationship("Rating", secondary=association_table_rating_poster, back_populates='poster')
     rating_as_postee = db.relationship("Rating", secondary=association_table_rating_postee, back_populates='postee')
@@ -79,8 +75,7 @@ class User(db.Model):
     job_as_potential = db.relationship("Job", secondary=association_table_potential, back_populates='potential')
     
     #Chat info
-    sent_messages_id = db.relationship("Chat", secondary=association_chat_sender, back_populates='sender_id')
-    received_messages_id = db.relationship("Chat", secondary=association_chat_receiver, back_populates='receiver_id')
+    chats = db.relationship("Chat", secondary=association_table_chat, back_populates='users')
 
     # Session information
     session_token = db.Column(db.String, nullable=False, unique=True)
@@ -108,12 +103,14 @@ class User(db.Model):
             "last" : self.last,
             "email" : self.email,
             "phone_number" : self.phone_number,
-            "assets" :[i.simple_serialize() for i in self.images],
+            "assets" :[i.serialize() for i in self.images],
             "job_as_poster": [p.simple_serialize() for p in self.job_as_poster],
             "job_as_receiver": [r.simple_serialize() for r in self.job_as_receiver],
             "job_as_potential": [p.simple_serialize() for p in self.job_as_potential],
             "rating_as_poster": [r.simple_serialize() for r in self.rating_as_poster],
-            "rating_as_postee":  [r.simple_serialize() for r in self.rating_as_postee]
+            "rating_as_postee":  [r.simple_serialize() for r in self.rating_as_postee],
+            "chats": [c.simple_serialize() for c in self.chats],
+            "messages": [m.serialize() for m in self.messages]
         }
 
     def simple_serialize(self):
@@ -262,16 +259,7 @@ class Asset(db.Model):
             "job_id": self.job_id,
             "user_id": self.user_id
         }
-    
-    def simple_serialize(self):
-        """
-        Serializes an asset object without relations
-        """
-        return {
-            "id" : self.id,
-            "url": f"{self.base_url}/{self.salt}.{self.extension}",
-            "created_at": str(self.created_at),
-        }
+
     
 #-----------------JOBS--------------------------------------------
 
@@ -325,7 +313,7 @@ class Job(db.Model):
             "reward": self.reward,
             "done": self.done,
             "taken": self.taken,
-            "asset": [i.simple_serialize() for i in self.images],
+            "asset": [i.serialize() for i in self.images],
             "poster": [p.simple_serialize() for p in self.poster],
             "receiver": [r.simple_serialize() for r in self.receiver],
             "potential": [p.simple_serialize() for p in self.potential]
@@ -394,19 +382,16 @@ class Chat(db.Model):
     """
     __tablename__ = "chat"
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
-    message = db.Column(db.String, nullable = False)
-    sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    receiver_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    time = db.Column(db.DateTime, nullable=False)
+    messages = db.relationship("Message", cascade="delete")
+    users = db.relationship("User", secondary=association_table_chat, back_populates='chats')
+    time = db.Column(db.String, nullable=False)
 
     def __init__(self, **kwargs):
         """
         Creates a Chat object
         """
-        self.sender_id = kwargs.get("sender_id")
-        self.receiver_id = kwargs.get("receiver_id")
-        self.message = kwargs.get("message")
-        self.time = kwargs.get("time")
+        self.users = kwargs.get("users")
+        self.time = datetime.datetime.now()
 
     def serialize(self):
         """
@@ -414,8 +399,55 @@ class Chat(db.Model):
         """
         return {
             "id": self.id,
+            "message": [m.serialize() for m in self.messages],
+            "users":[u.simple_serialize() for u in self.users],
+            "time": self.time
+        }
+
+    def simple_serialize(self):
+        """
+        Simple Serializes a Chat Object
+        """
+        return {
+            "id": self.id,
+            "time": self.time
+        }
+    
+#--------------------MESSAGES------------------------------------------
+class Message(db.Model):
+    """
+    Message Model
+    """
+    __tablename__ = "message"
+    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
+    chat_id = db.Column(db.Integer, db.ForeignKey("chat.id"), nullable = False)
+    message = db.Column(db.String, nullable = False)
+    time = db.Column(db.String, nullable = False)
+
+    def __init__(self, **kwargs):
+        """
+        Creates a Message object
+        """
+        self.sender_id = kwargs.get("sender_id")
+        self.chat_id = kwargs.get("chat")
+        self.message = kwargs.get("message")
+        self.time = datetime.datetime.now()
+    
+    def serialize(self):
+        """
+        Serialize a message obj
+        """
+        return {
+            "id": self.id,
+            "sender_id": self.sender_id,
+            "chat_id": self.chat_id,
             "message": self.message,
             "time": self.time
         }
+
+
+
+
 
 
