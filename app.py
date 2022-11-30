@@ -489,7 +489,7 @@ def delete_rating(rating_id):
     db.session.commit()
     return success_response(rating.serialize())
 
-@socketio.on('message', namespace="/chat/")
+@socketio.on('message', namespace="/api/chat/")
 def handleMessage(info):
     """
     Handles socketio messaging
@@ -505,19 +505,19 @@ def handleMessage(info):
         room = join_room(str(info['receiver_id']) + ' ' + str(info['sender_id']))
     emit('private_message', message.serialize(), json=True, room = room)
 
-@socketio.on('connect', namespace="/chat/")
+@socketio.on('connect', namespace="/api/chat/")
 def get_chat(info):
     """
     Handles socketio for getting all messages between users
     """
     sender = User.query.filter_by(id = info['user1_id'])
     if sender is None: 
-        return failure_response("Sender not found", 400)
+        return failure_response("User 1 not found", 400)
     receiver = User.query.filter_by(id = info['user2_id'])
     if receiver is None: 
-        return failure_response("Receiver not found", 400)
-    sent_messages = Chat.query.filter_by(sender_id=info['sender_id'], receiver_id=info['receiver_id']).order_by(Chat.time).all()
-    received_messages = Chat.query.filter_by(sender_id=info['receiver_id'], receiver_id=info['sender_id']).order_by(Chat.time).all()
+        return failure_response("User 2 not found", 400)
+    sent_messages = Chat.query.filter_by(sender_id=info['user1_id'], receiver_id=info['user2_id']).order_by(Chat.time).all()
+    received_messages = Chat.query.filter_by(sender_id=info['user2_id'], receiver_id=info['user1_id']).order_by(Chat.time).all()
     new = []
     i = 0
     j = 0
@@ -538,7 +538,7 @@ def get_chat(info):
     else:
         room = (str(info['user2_id']) + ' ' + str(info['user1_id']))
     join_room(room)
-    emit('past_messages' ,{'chat': new}, json=True, room=room)
+    emit('past_history' ,{'chat': new}, json=True, room=room)
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=8000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=8000, debug=True, allow_unsafe_werkzeug=True)

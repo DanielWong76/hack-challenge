@@ -42,6 +42,16 @@ association_table_rating_postee = db.Table("association_rating_postee", db.Model
     db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
 )
 
+association_table_chat_sender = db.Table("association_chat_sender", db.Model.metadata,
+    db.Column("sent_messages_id", db.Integer, db.ForeignKey("chat.id")),
+    db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
+)
+
+association_table_chat_sender = db.Table("association_chat_sender", db.Model.metadata,
+    db.Column("sent_messages_id", db.Integer, db.ForeignKey("chat.id")),
+    db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
+)
+
 #-----------------USERS--------------------------------------------
 class User(db.Model):
     """
@@ -67,7 +77,10 @@ class User(db.Model):
     job_as_poster = db.relationship("Job", secondary=association_table_poster, back_populates='poster')
     job_as_receiver = db.relationship("Job", secondary=association_table_receiver, back_populates='receiver')
     job_as_potential = db.relationship("Job", secondary=association_table_potential, back_populates='potential')
-    chat = db.relationship("Chat", cascade="delete")
+    
+    #Chat info
+    sent_messages_id = db.relationship("Chat", secondary=association_chat_sender, back_populates='sender_id')
+    received_messages_id = db.relationship("Chat", secondary=association_chat_receiver, back_populates='receiver_id')
 
     # Session information
     session_token = db.Column(db.String, nullable=False, unique=True)
