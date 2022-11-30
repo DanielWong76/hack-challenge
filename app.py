@@ -489,20 +489,53 @@ def delete_rating(rating_id):
     db.session.commit()
     return success_response(rating.serialize())
 
+@app.route("/api/chat/<int:user_id>/", methods=["GET"])
+def get_chat(user_id):
+    """
+    Endpoint for getting all of a user's chats
+    """
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    
+    new = []
+    chats = user.chat 
+    for x in chats:
+        new.append(chats.serialize())
+    
+    return success_response(new)
+
+@socketio.on('new_chat', namespace="/api/chat/")
+def create_chat(info):
+    """
+    Creates a new chat between users
+    """
+    sender = User.query.filter_by(id=info['sender_id']).first()
+    if sender is None:
+        return failure_response("Sender not found")
+    receiver = User.query.filter_by(id=info['receiver_id']).first()
+    if receiver is None:
+        return failure_response("Receiver not found")
+    chat = Chat(users=[sender,receiver])
+
+    return success_response(chat.serialize())
+
+
 @socketio.on('message', namespace="/api/chat/")
 def handleMessage(info):
     """
     Handles socketio messaging
     """
+    message = Message(sender_id = info['sender_id'], receiver_id = info['receiver_id'], chat_id = info['chat_id'], message = info['message'])
+    chat = Chat.query.filter_by(id = info['chat_id']).first()
+    if chat is None:
+        return failure_response("Chat not found!")
     time = datetime.datetime.now()
-    message = Chat(sender_id = info['sender_id'], receiver_id = info['receiver_id'], message = info['msg'], time = time)
+    chat.time = time
     session.add(message)
     session.commit()
-    print('Message: ' + info['msg'])
-    if info['sender_id'] < info['receiver_id']:
-        room = (str(info['sender_id']) + ' ' + str(info['receiver_id']))
-    else:
-        room = join_room(str(info['receiver_id']) + ' ' + str(info['sender_id']))
+
+    room = chat_id
     emit('private_message', message.serialize(), json=True, room = room)
 
 @socketio.on('connect', namespace="/api/chat/")
@@ -510,10 +543,10 @@ def get_chat(info):
     """
     Handles socketio for getting all messages between users
     """
-    sender = User.query.filter_by(id = info['user1_id'])
+    sender = User.query.filter_by(id = info['user1_id']).first()
     if sender is None: 
         return failure_response("User 1 not found", 400)
-    receiver = User.query.filter_by(id = info['user2_id'])
+    receiver = User.query.filter_by(id = info['user2_id']).first()
     if receiver is None: 
         return failure_response("User 2 not found", 400)
     sent_messages = Chat.query.filter_by(sender_id=info['user1_id'], receiver_id=info['user2_id']).order_by(Chat.time).all()
@@ -533,10 +566,7 @@ def get_chat(info):
     else:
         new += sent_messages
     #connect
-    if info['user1_id'] < info['user2_id']:
-        room = (str(info['user1_id']) + ' ' + str(info['user2_id']))
-    else:
-        room = (str(info['user2_id']) + ' ' + str(info['user1_id']))
+    room = info['chat_id']
     join_room(room)
     emit('past_history' ,{'chat': new}, json=True, room=room)
 

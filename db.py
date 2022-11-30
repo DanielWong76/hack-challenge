@@ -42,9 +42,14 @@ association_table_rating_postee = db.Table("association_rating_postee", db.Model
     db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
 )
 
-association_table_chat = db.Table("association_chat", db.Model.metadata,
-    db.Column("chat_id", db.Integer, db.ForeignKey("chat.id")),
-    db.Column("user_id", db.Integer, db.ForeignKey("user.id"))
+association_table_chat_sender = db.Table("association_chat_sender", db.Model.metadata,
+    db.Column("sent_messages_id", db.Integer, db.ForeignKey("chat.id")),
+    db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
+)
+
+association_table_chat_sender = db.Table("association_chat_sender", db.Model.metadata,
+    db.Column("sent_messages_id", db.Integer, db.ForeignKey("chat.id")),
+    db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
 )
 
 #-----------------USERS--------------------------------------------
@@ -443,7 +448,7 @@ class Message(db.Model):
             "sender_id": self.sender_id,
             "chat_id": self.chat_id,
             "message": self.message,
-            "time": self.time
+            "time": str(self.time)
         }
 
 
