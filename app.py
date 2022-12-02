@@ -583,6 +583,7 @@ def handleMessage(info):
     chat.time = time
     db.session.add(message)
     db.session.commit()
+    room = rooms()[len(rooms()) - 1]
     emit('private_message', message.serialize(), json=True, room = room)
     return success_response(message.serialize())
     
