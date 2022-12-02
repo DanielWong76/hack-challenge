@@ -530,14 +530,13 @@ def get_chats(user_id):
     user = User.query.filter_by(id=user_id).first()
     if user is None:
         return failure_response("User not found!")
-
-    new = [chat.serialize() for chat in user.chats]
-    res = []
-    for chat in new:
-        if len(chat.get("message")) > 0:
-            res.append(chat)
-
-    return success_response({"chat":res})
+    
+    new = []
+    chats = user.chat 
+    for x in chats:
+        new.append(chats.serialize())
+    
+    return success_response(new)
 
 @socketio.on('new_chat', namespace="/api/chat/")
 def create_chat(info):
@@ -556,23 +555,35 @@ def create_chat(info):
     return success_response(chat.serialize())
 
 
-@socketio.on('message', namespace="/api/chat/")
+@socketio.on('private_message', namespace="/api/chat/")
 def handleMessage(info):
     """
     Handles socketio messaging
     """
     sender = User.query.filter_by(id = info['sender_id']).first()
     receiver = User.query.filter_by(id = info['receiver_id']).first()
-    room = Chat.query.filter(Chat.users.has(sender) and Chat.users.has(receiver)).first().chat_id
-    message = Message(sender_id = info['sender_id'], receiver_id = info['receiver_id'], chat_id = room, message = info['message'])
+    sender_chats = sender.chats
+    receiver_chats = receiver.chats
+
+    sender_chat_ids = []
+    receiver_chat_ids = []
+    for x in range(len(sender_chats)):
+        sender_chat_ids.append(x.chat_id)
+    for x in range(len(receiver_chats)):
+        receiver_chat_ids.append(x.chat_id)
+    
+    intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
+    room = intersection[0]
+    message = Message(sender_id = info['sender_id'], chat_id = room, message = info['msg'])
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         return emit('failure', 'chat not found')
     time = datetime.datetime.now()
     chat.time = time
-    db.session.add(message)
-    db.session.commit()
+    session.add(message)
+    session.commit()
     emit('private_message', message.serialize(), json=True, room = room)
+    return success_response(message.serialize())
 
 @socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
@@ -585,13 +596,24 @@ def get_chat(info):
     user2 = User.query.filter_by(id = info['user2_id']).first()
     if user2 is None: 
         return failure_response("User 2 not found", 400)
-    messages = Chat.query.filter_by(users=[user1, user2]).order_by(Chat.time).all()
-    new = []
+    user1_chats = user1.chats
+    user2_chats = user2.chats
+
+    user1_chat_ids = []
+    user2_chat_ids = []
+    for x in range(len(user1_chats)):
+        user1_chat_ids.append(x.chat_id)
+    for x in range(len(user2_chats)):
+        user2_chat_ids.append(x.chat_id)
     
+    intersection = [value for value in user1_chat_ids if value in user2_chat_ids]
+    room = intersection[0]
+
+    messages = Chat.query.filter_by(id=room).first().messages
+    new = []
     for x in messages:
         new.append(x.serialize())
     #connect
-    room = Chat.query.filter_by(users=[user1,user2]).first().chat_id
     join_room(room)
     emit('past_history' ,{'chat': new}, json=True, room=room)
 
