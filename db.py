@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 import os
+from os import environ
 
 import bcrypt
 from flask_sqlalchemy import SQLAlchemy
@@ -165,7 +166,7 @@ class User(db.Model):
 
 EXTENSIONS = ["png", "gif", "jpg", "jpeg"]
 BASE_DIR = os.getcwd()
-S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
+S3_BUCKET_NAME = environ.get("S3_BUCKET_NAME")
 S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.us-east-2.amazonaws.com"
 
 class Asset(db.Model):
@@ -279,6 +280,8 @@ class Job(db.Model):
     reward = db.Column(db.String, nullable = False)
     done = db.Column(db.Boolean, nullable = False)
     taken = db.Column(db.Boolean, nullable = False)
+    longtitude = db.Column(db.Integer, nullable = False)
+    latitude = db.Column(db.Integer, nullable = False)
     poster = db.relationship("User", secondary=association_table_poster, back_populates='job_as_poster')
     receiver =  db.relationship("User", secondary=association_table_receiver, back_populates='job_as_receiver')
     images = db.relationship("Asset", cascade="delete")
@@ -298,6 +301,8 @@ class Job(db.Model):
         self.reward = kwargs.get("reward")
         self.poster += [kwargs.get("poster")]
         self.category = kwargs.get("category")
+        self.longtitude = kwargs.get("longtitude")
+        self.latitude = kwargs.get("latitude")
         self.done = False
         self.taken = False
     
@@ -317,6 +322,8 @@ class Job(db.Model):
             "done": self.done,
             "taken": self.taken,
             "category": self.category,
+            "longtitude": self.longtitude,
+            "latitude": self.latitude,
             "asset": [i.serialize() for i in self.images],
             "poster": [p.simple_serialize() for p in self.poster],
             "receiver": [r.simple_serialize() for r in self.receiver],

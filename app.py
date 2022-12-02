@@ -318,9 +318,11 @@ def create_job(user_id):
     duration = body.get("duration")
     reward = body.get("reward")
     category = body.get("category")
-    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None:
+    longtitude = body.get("longtitude")
+    latitude = body.get("latitude")
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None or longtitude is None or latitude is None:
         return failure_response("Missing one of the required fields", 400)
-    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category)
+    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category, longtitude = longtitude, latitude = latitude)
     db.session.add(job)
     db.session.commit()
     return success_response(job.serialize(), 201)
@@ -386,7 +388,9 @@ def update_job(job_id):
     date_activity = body.get("date_activity")
     duration = body.get("duration")
     reward = body.get("reward")
-    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None:
+    longtitude = body.get("longtitude")
+    latitude = body.get("latitude")
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or longtitude is None or latitude is None:
         return failure_response("Missing one of the required fields", 400)
     job.title = title 
     job.description = description 
@@ -394,6 +398,8 @@ def update_job(job_id):
     job.date_activity = date_activity 
     job.duration = duration 
     job.reward = reward 
+    job.longtitude = longtitude
+    job.latitude = latitude
     db.session.commit()
     return success_response(job.serialize(), 201)
 
@@ -529,8 +535,8 @@ def create_chat(info):
     if receiver is None:
         return failure_response("Receiver not found")
     chat = Chat(users=[sender,receiver])
-    session.add(chat)
-    session.commit()
+    db.session.add(chat)
+    db.session.commit()
     return success_response(chat.serialize())
 
 
@@ -540,16 +546,16 @@ def handleMessage(info):
     Handles socketio messaging
     """
     sender = User.query.filter_by(id = info['sender_id']).first()
-    receiver.query.filter_by(id = info['receiver_id']).first()
-    room = Chat.query.filter_by(users=[sender,receiver]).first().chat_id
+    receiver = User.query.filter_by(id = info['receiver_id']).first()
+    room = Chat.query.filter(Chat.users.has(sender) and Chat.users.has(receiver)).first().chat_id
     message = Message(sender_id = info['sender_id'], receiver_id = info['receiver_id'], chat_id = room, message = info['message'])
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         return emit('failure', 'chat not found')
     time = datetime.datetime.now()
     chat.time = time
-    session.add(message)
-    session.commit()
+    db.session.add(message)
+    db.session.commit()
     emit('private_message', message.serialize(), json=True, room = room)
 
 @socketio.on('join', namespace="/api/chat/")
