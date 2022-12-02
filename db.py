@@ -456,9 +456,3 @@ class Message(db.Model):
             "message": self.message,
             "time": str(self.time)
         }
-
-
-
-
-
-

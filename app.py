@@ -530,13 +530,13 @@ def get_chats(user_id):
     user = User.query.filter_by(id=user_id).first()
     if user is None:
         return failure_response("User not found!")
-    
-    new = []
-    chats = user.chat 
-    for x in chats:
-        new.append(chats.serialize())
-    
-    return success_response(new)
+
+    new = [chat.serialize() for chat in user.chats]
+    res = []
+    for chat in new:
+        if len(chat.get("message")) > 0:
+            res.append(chat)
+    return success_response({"chat":res})
 
 @socketio.on('new_chat', namespace="/api/chat/")
 def create_chat(info):
@@ -580,8 +580,8 @@ def handleMessage(info):
         return emit('failure', 'chat not found')
     time = datetime.datetime.now()
     chat.time = time
-    session.add(message)
-    session.commit()
+    db.session.add(message)
+    db.session.commit()
     emit('private_message', message.serialize(), json=True, room = room)
     return success_response(message.serialize())
 
