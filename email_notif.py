@@ -18,3 +18,4 @@ def send_email(to, subject, content):
         print("sucess")
     except Exception as e:
         print(e)
+
