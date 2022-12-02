@@ -81,9 +81,6 @@ def register_account():
         return failure_response("User already exists", 400)
     user_serialize = user.serialize()
     send_email(to=email, subject="Registering an Account", content="Successful Registration! Yay!")
-    #user_serialize["session_token"] = user.session_token
-    #user_serialize["session_expiration"] = str(user.session_expiration)
-    #user_serialize["update_token"] = user.update_token
 
     return success_response(user_serialize, 201)
  
@@ -382,7 +379,6 @@ def complete_job(job_id):
         return failure_response("Job not found!")
     job.done = True
     db.session.commit()
-    print(job.poster[0].email)
     send_email( to=job.poster[0].email, subject=f"The side quest {job.title} has been complete", content=f"You side quest has been completed. Please reach out to {job.receiver[0].first}!")
 
     return success_response(job.serialize(), 201)
@@ -565,23 +561,18 @@ def handleMessage(info):
     sender_chats = sender.chats
     receiver_chats = receiver.chats
 
-    print(sender_chats)
-    print(receiver_chats)
     sender_chat_ids = []
     receiver_chat_ids = []
     for x in sender_chats:
         sender_chat_ids.append(x.id)
     for x in receiver_chats:
         receiver_chat_ids.append(x.id)
-    print(sender_chat_ids)
-    print(receiver_chat_ids)
+    
 
     intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
-    print("\n")
-    print(intersection)
     
     room = intersection[0]
-    print(room)
+
     
     message = Message(sender_id = info['sender_id'], chat = room, message = info['msg'])
     
