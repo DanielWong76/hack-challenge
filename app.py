@@ -7,7 +7,7 @@ from flask import Flask, request
 import json
 import users_dao
 import datetime
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import SocketIO, emit, join_room, rooms
 from email_notif import send_email
  
  
@@ -578,7 +578,7 @@ def handleMessage(info):
     
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
-        return emit('failure', 'chat not found')
+        emit('failure', 'chat not found')
     time = datetime.datetime.now()
     chat.time = time
     db.session.add(message)
@@ -612,10 +612,9 @@ def get_chat(info):
     room = intersection[0]
 
     messages = Chat.query.filter_by(id=room).first().messages
-    new = []
-    for x in messages:
-        new.append(x.serialize())
+    new = [message.serialize() for message in messages.messages]
     #connect
+    room = rooms()[len(rooms()) - 1]
     join_room(room)
     emit('past_history' ,{'chat': new}, json=True, room=room)
     return success_response({'chat':new})
