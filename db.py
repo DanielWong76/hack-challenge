@@ -283,6 +283,7 @@ class Job(db.Model):
     receiver =  db.relationship("User", secondary=association_table_receiver, back_populates='job_as_receiver')
     images = db.relationship("Asset", cascade="delete")
     potential = db.relationship("User", secondary=association_table_potential, back_populates='job_as_potential')
+    category = db.Column(db.String, nullable = False)
 
     def __init__(self, **kwargs):
         """
@@ -296,6 +297,7 @@ class Job(db.Model):
         self.duration = kwargs.get("duration")
         self.reward = kwargs.get("reward")
         self.poster += [kwargs.get("poster")]
+        self.category = kwargs.get("category")
         self.done = False
         self.taken = False
     
@@ -314,6 +316,7 @@ class Job(db.Model):
             "reward": self.reward,
             "done": self.done,
             "taken": self.taken,
+            "category": self.category,
             "asset": [i.serialize() for i in self.images],
             "poster": [p.simple_serialize() for p in self.poster],
             "receiver": [r.simple_serialize() for r in self.receiver],
