@@ -283,14 +283,14 @@ def get_asset(asset_id):
     return success_response(asset.serialize())
 
 #-----------------JOBS--------------------------------------------
-@app.route("/api/job/filter/", methods=["POST"])
+@app.route("/api/job/filter/")
 def filter_jobs():
     """
     Endpoint for doing a search bar filter
     """
     body = json.loads(request.data)
     search = body["search"]
-    jobs = Job.query.filter(Job.title.like(search)).all()
+    jobs = [job.serialize() for job in Job.query.filter(Job.title.like(search)).all()]
     return success_response({"jobs": jobs})
 
 @app.route("/api/job/")
@@ -370,8 +370,23 @@ def pick_receiver(job_id, user_id):
     job.receiver = [user]
     job.taken = True
     db.session.commit()
+
     send_email(to=user.email, subject=f"Congrats! You were chosen for {job.title}", content=f"You were chosen to comeplete {job.title}. The date of the quest is {job.date_activity} and should last {job.duration} minutes. For more information, check your Jobs section in your profile!")
+    
     return success_response(job.serialize(), 201)
+
+@app.route("/api/job/<int:job_id>/done", methods= ["POST"])
+def complete_job(job_id):
+    job = Job.query.filter_by(id = job_id).first()
+    if job is None:
+        return failure_response("Job not found!")
+    job.done = True
+    db.session.commit()
+    print(job.poster[0].email)
+    send_email( to=job.poster[0].email, subject=f"The side quest {job.title} has been complete", content=f"You side quest has been completed. Please reach out to {job.receiver[0].first}!")
+
+    return success_response(job.serialize(), 201)
+
 
 @app.route("/api/job/<int:job_id>/", methods = ["POST"])
 def update_job(job_id):
@@ -508,7 +523,7 @@ def delete_rating(rating_id):
     return success_response(rating.serialize())
 
 @app.route("/api/chat/<int:user_id>/", methods=["GET"])
-def get_chat(user_id):
+def get_chats(user_id):
     """
     Endpoint for getting all of a user's chats
     """
@@ -520,6 +535,7 @@ def get_chat(user_id):
     chats = user.chat 
     for x in chats:
         new.append(chats.serialize())
+    
     return success_response(new)
 
 @socketio.on('new_chat', namespace="/api/chat/")
