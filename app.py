@@ -2,7 +2,7 @@ import os
 from ast import Assign
 from multiprocessing.util import ForkAwareThreadLock
 from unittest.mock import NonCallableMagicMock
-from db import db, Asset, Job, Rating, User, Chat
+from db import db, Asset, Job, Rating, User, Chat, Message
 from flask import Flask, request
 import json
 import users_dao
