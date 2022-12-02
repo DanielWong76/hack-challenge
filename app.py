@@ -281,6 +281,15 @@ def get_asset(asset_id):
     return success_response(asset.serialize())
 
 #-----------------JOBS--------------------------------------------
+@app.route("/api/job/filter", methods=["POST"])
+def filter_jobs():
+    """
+    Endpoint for doing a search bar filter
+    """
+    body = json.loads(request.data)
+    search = body["search"]
+    jobs = Job.query.filter(Job.title.like(search)).all()
+    return success_response({"jobs": jobs})
 
 @app.route("/api/job/")
 def get_jobs():
@@ -306,9 +315,10 @@ def create_job(user_id):
     date_activity = body.get("date_activity")
     duration = body.get("duration")
     reward = body.get("reward")
-    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None:
+    category = body.get("category")
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None:
         return failure_response("Missing one of the required fields", 400)
-    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user)
+    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category)
     db.session.add(job)
     db.session.commit()
     return success_response(job.serialize(), 201)
@@ -517,7 +527,8 @@ def create_chat(info):
     if receiver is None:
         return failure_response("Receiver not found")
     chat = Chat(users=[sender,receiver])
-
+    session.add(chat)
+    session.commit()
     return success_response(chat.serialize())
 
 
@@ -527,48 +538,41 @@ def handleMessage(info):
     Handles socketio messaging
     """
     message = Message(sender_id = info['sender_id'], receiver_id = info['receiver_id'], chat_id = info['chat_id'], message = info['message'])
-    chat = Chat.query.filter_by(id = info['chat_id']).first()
+    room = Chat.query.filter_by(users=[sender,receiver]).first().chat_id
+    chat = Chat.query.filter_by(id = room).first()
     if chat is None:
-        return failure_response("Chat not found!")
+        return emit('failure', 'chat not found')
     time = datetime.datetime.now()
     chat.time = time
     session.add(message)
     session.commit()
-
-    room = chat_id
     emit('private_message', message.serialize(), json=True, room = room)
 
-@socketio.on('connect', namespace="/api/chat/")
+@socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
     """
     Handles socketio for getting all messages between users
     """
-    sender = User.query.filter_by(id = info['user1_id']).first()
-    if sender is None: 
+    user1 = User.query.filter_by(id = info['user1_id']).first()
+    if user1 is None: 
         return failure_response("User 1 not found", 400)
-    receiver = User.query.filter_by(id = info['user2_id']).first()
-    if receiver is None: 
+    user2 = User.query.filter_by(id = info['user2_id']).first()
+    if user2 is None: 
         return failure_response("User 2 not found", 400)
-    sent_messages = Chat.query.filter_by(sender_id=info['user1_id'], receiver_id=info['user2_id']).order_by(Chat.time).all()
-    received_messages = Chat.query.filter_by(sender_id=info['user2_id'], receiver_id=info['user1_id']).order_by(Chat.time).all()
+    messages = Chat.query.filter_by(users=[user1, user2]).order_by(Chat.time).all()
     new = []
-    i = 0
-    j = 0
-    while (len(received_messages)>j and i < len(sent_messages)):
-        if (received_messages[j].time < sent_messages[i].time):
-            new.append(received_messages[j].serialize())
-            j+=1
-        else:
-            new.append(sent_messages[i].serialize())
-            i+=1
-    if j<len(received_messages):
-        new += received_messages
-    else:
-        new += sent_messages
+    
+    for x in messages:
+        new.append(x.serialize())
     #connect
-    room = info['chat_id']
+    room = Chat.query.filter_by(users=[user1,user2]).first().chat_id
     join_room(room)
     emit('past_history' ,{'chat': new}, json=True, room=room)
 
+@socketio.on('connect', namespace="/api/chat/")
+def connect():
+    print("user connected")
+    emit("connection succeeded", broadcast=True)
+
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=8000, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", port=8000, debug=True)
