@@ -1,4 +1,4 @@
-import os
+from os import environ
 from ast import Assign
 from multiprocessing.util import ForkAwareThreadLock
 from unittest.mock import NonCallableMagicMock
@@ -8,6 +8,7 @@ import json
 import users_dao
 import datetime
 from flask_socketio import SocketIO, emit, join_room
+from email_notif import send_email
  
  
 app = Flask(__name__)
@@ -15,7 +16,7 @@ db_filename = "hack.db"
  
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///%s" % db_filename
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_ECHO"] = True
+app.config["SQLALCHEMY_ECHO"] = False
 app.config['SECRET_KEY'] = 'mysecret'
 socketio = SocketIO(app)
 
@@ -79,6 +80,7 @@ def register_account():
     if not success:
         return failure_response("User already exists", 400)
     user_serialize = user.serialize()
+    send_email(to=email, subject="Registering an Account", content="Successful Registration! Yay!")
     #user_serialize["session_token"] = user.session_token
     #user_serialize["session_expiration"] = str(user.session_expiration)
     #user_serialize["update_token"] = user.update_token
@@ -356,7 +358,7 @@ def pick_receiver(job_id, user_id):
     job.receiver = [user]
     job.taken = True
     db.session.commit()
-
+    send_email(to=user.email, subject=f"Congrats! You were chosen for {job.title}", content=f"You were chosen to comeplete {job.title}. The date of the quest is {job.date_activity} and should last {job.duration} minutes. For more information, check your Jobs section in your profile!")
     return success_response(job.serialize(), 201)
 
 @app.route("/api/job/<int:job_id>/", methods = ["POST"])
