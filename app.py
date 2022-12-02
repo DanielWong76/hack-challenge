@@ -1,4 +1,4 @@
-import os
+from os import environ
 from ast import Assign
 from multiprocessing.util import ForkAwareThreadLock
 from unittest.mock import NonCallableMagicMock
@@ -8,6 +8,7 @@ import json
 import users_dao
 import datetime
 from flask_socketio import SocketIO, emit, join_room
+from email_notif import send_email
  
  
 app = Flask(__name__)
@@ -79,6 +80,7 @@ def register_account():
     if not success:
         return failure_response("User already exists", 400)
     user_serialize = user.serialize()
+    send_email(to=email, subject="Registering an Account", content="Successful Registration! Yay!")
     #user_serialize["session_token"] = user.session_token
     #user_serialize["session_expiration"] = str(user.session_expiration)
     #user_serialize["update_token"] = user.update_token
@@ -316,9 +318,11 @@ def create_job(user_id):
     duration = body.get("duration")
     reward = body.get("reward")
     category = body.get("category")
-    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None:
+    longtitude = body.get("longtitude")
+    latitude = body.get("latitude")
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None or longtitude is None or latitude is None:
         return failure_response("Missing one of the required fields", 400)
-    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category)
+    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category, longtitude = longtitude, latitude = latitude)
     db.session.add(job)
     db.session.commit()
     return success_response(job.serialize(), 201)
@@ -366,7 +370,7 @@ def pick_receiver(job_id, user_id):
     job.receiver = [user]
     job.taken = True
     db.session.commit()
-
+    send_email(to=user.email, subject=f"Congrats! You were chosen for {job.title}", content=f"You were chosen to comeplete {job.title}. The date of the quest is {job.date_activity} and should last {job.duration} minutes. For more information, check your Jobs section in your profile!")
     return success_response(job.serialize(), 201)
 
 @app.route("/api/job/<int:job_id>/", methods = ["POST"])
@@ -384,7 +388,9 @@ def update_job(job_id):
     date_activity = body.get("date_activity")
     duration = body.get("duration")
     reward = body.get("reward")
-    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None:
+    longtitude = body.get("longtitude")
+    latitude = body.get("latitude")
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or longtitude is None or latitude is None:
         return failure_response("Missing one of the required fields", 400)
     job.title = title 
     job.description = description 
@@ -392,6 +398,8 @@ def update_job(job_id):
     job.date_activity = date_activity 
     job.duration = duration 
     job.reward = reward 
+    job.longtitude = longtitude
+    job.latitude = latitude
     db.session.commit()
     return success_response(job.serialize(), 201)
 
@@ -556,8 +564,8 @@ def handleMessage(info):
         return emit('failure', 'chat not found')
     time = datetime.datetime.now()
     chat.time = time
-    db.session.add(message)
-    db.session.commit()
+    session.add(message)
+    session.commit()
     emit('private_message', message.serialize(), json=True, room = room)
     return success_response(message.serialize())
 
