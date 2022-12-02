@@ -537,6 +537,8 @@ def handleMessage(info):
     """
     Handles socketio messaging
     """
+    sender = User.query.filter_by(id = info['sender_id']).first()
+    receiver.query.filter_by(id = info['receiver_id']).first()
     room = Chat.query.filter_by(users=[sender,receiver]).first().chat_id
     message = Message(sender_id = info['sender_id'], receiver_id = info['receiver_id'], chat_id = room, message = info['message'])
     chat = Chat.query.filter_by(id = room).first()
