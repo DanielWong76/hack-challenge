@@ -281,7 +281,7 @@ def get_asset(asset_id):
     return success_response(asset.serialize())
 
 #-----------------JOBS--------------------------------------------
-@app.route("/api/job/filter", methods=["POST"])
+@app.route("/api/job/filter/", methods=["POST"])
 def filter_jobs():
     """
     Endpoint for doing a search bar filter
