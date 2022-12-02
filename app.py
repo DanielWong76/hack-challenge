@@ -532,9 +532,9 @@ def get_chats(user_id):
         return failure_response("User not found!")
     
     new = []
-    chats = user.chat 
+    chats = user.chats 
     for x in chats:
-        new.append(chats.serialize())
+        new.append(x.serialize())
     
     return success_response(new)
 
@@ -573,11 +573,18 @@ def handleMessage(info):
         sender_chat_ids.append(x.id)
     for x in receiver_chats:
         receiver_chat_ids.append(x.id)
-    
+    print(sender_chat_ids)
+    print(receiver_chat_ids)
+
     intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
+    print("\n")
     print(intersection)
+    
     room = intersection[0]
-    message = Message(sender_id = info['sender_id'], chat_id = room, message = info['msg'])
+    print(room)
+    
+    message = Message(sender_id = info['sender_id'], chat = room, message = info['msg'])
+    
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         return emit('failure', 'chat not found')
@@ -587,6 +594,7 @@ def handleMessage(info):
     db.session.commit()
     emit('private_message', message.serialize(), json=True, room = room)
     return success_response(message.serialize())
+    
 
 @socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
