@@ -565,16 +565,26 @@ def handleMessage(info):
     sender_chats = sender.chats
     receiver_chats = receiver.chats
 
+    print(sender_chats)
+    print(receiver_chats)
     sender_chat_ids = []
     receiver_chat_ids = []
-    for x in range(len(sender_chats)):
-        sender_chat_ids.append(x.chat_id)
-    for x in range(len(receiver_chats)):
-        receiver_chat_ids.append(x.chat_id)
-    
+    for x in sender_chats:
+        sender_chat_ids.append(x.id)
+    for x in receiver_chats:
+        receiver_chat_ids.append(x.id)
+    print(sender_chat_ids)
+    print(receiver_chat_ids)
+
     intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
+    print("\n")
+    print(intersection)
+    
     room = intersection[0]
-    message = Message(sender_id = info['sender_id'], chat_id = room, message = info['msg'])
+    print(room)
+    
+    message = Message(sender_id = info['sender_id'], chat = room, message = info['msg'])
+    
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         return emit('failure', 'chat not found')
@@ -584,6 +594,7 @@ def handleMessage(info):
     db.session.commit()
     emit('private_message', message.serialize(), json=True, room = room)
     return success_response(message.serialize())
+    
 
 @socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
@@ -601,10 +612,10 @@ def get_chat(info):
 
     user1_chat_ids = []
     user2_chat_ids = []
-    for x in range(len(user1_chats)):
-        user1_chat_ids.append(x.chat_id)
-    for x in range(len(user2_chats)):
-        user2_chat_ids.append(x.chat_id)
+    for x in user1_chats:
+        user1_chat_ids.append(x.id)
+    for x in user2_chats:
+        user2_chat_ids.append(x.id)
     
     intersection = [value for value in user1_chat_ids if value in user2_chat_ids]
     room = intersection[0]
@@ -616,6 +627,7 @@ def get_chat(info):
     #connect
     join_room(room)
     emit('past_history' ,{'chat': new}, json=True, room=room)
+    return success_response({'chat':new})
 
 @socketio.on('connect', namespace="/api/chat/")
 def connect():
