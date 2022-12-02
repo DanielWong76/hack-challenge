@@ -537,8 +537,8 @@ def handleMessage(info):
     """
     Handles socketio messaging
     """
-    message = Message(sender_id = info['sender_id'], receiver_id = info['receiver_id'], chat_id = info['chat_id'], message = info['message'])
     room = Chat.query.filter_by(users=[sender,receiver]).first().chat_id
+    message = Message(sender_id = info['sender_id'], receiver_id = info['receiver_id'], chat_id = room, message = info['message'])
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         return emit('failure', 'chat not found')
