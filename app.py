@@ -627,6 +627,7 @@ def get_chat(info):
     #connect
     join_room(room)
     emit('past_history' ,{'chat': new}, json=True, room=room)
+    return success_response({'chat':new})
 
 @socketio.on('connect', namespace="/api/chat/")
 def connect():
