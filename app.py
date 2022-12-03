@@ -29,7 +29,7 @@ def success_response(data, code=200):
     Returns a generic success response
     """
     return json.dumps(data), code
- 
+
  
 def failure_response(message, code=404):
     """
@@ -296,7 +296,10 @@ def create_job(user_id):
     category = body.get("category")
     longtitude = body.get("longtitude")
     latitude = body.get("latitude")
-    asset = user.images[len(user.images)-1]
+    if len(user.images) > 0:
+        asset = user.images[len(user.images)-1]
+    else:
+        asset = None
     if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None or longtitude is None or latitude is None:
         return failure_response("Missing one of the required fields", 400)
     job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category, longtitude = longtitude, latitude = latitude, asset=asset)
@@ -330,7 +333,7 @@ def add_job(user_id, job_id):
 @app.route("/api/job/<int:job_id>/user/<int:user_id>/", methods= ["POST"])
 def pick_receiver(job_id, user_id):
     """
-    Endpoint for jobs to pick a empolyer
+    Endpoint for jobs to pick a employee
     """
     user = User.query.filter_by(id = user_id).first()
     if user is None:
@@ -357,6 +360,9 @@ def pick_receiver(job_id, user_id):
 
 @app.route("/api/job/<int:job_id>/done", methods= ["POST"])
 def complete_job(job_id):
+    """
+    Endpoint for completing a job
+    """
     job = Job.query.filter_by(id = job_id).first()
     if job is None:
         return failure_response("Job not found!")
@@ -511,11 +517,7 @@ def get_chats(user_id):
         return failure_response("User not found!")
 
     new = [chat.serialize() for chat in user.chats]
-    res = []
-    for chat in new:
-        if len(chat.get("message")) > 0:
-            res.append(chat)
-    return success_response({"chat":res})
+    return success_response({"chat":new})
 
 @socketio.on('new_chat', namespace="/api/chat/")
 def create_chat(info):
@@ -532,7 +534,6 @@ def create_chat(info):
     db.session.add(chat)
     db.session.commit()
     emit('chat_created', chat.serialize(), json=True)
-
 
 @socketio.on('private_message', namespace="/api/chat/")
 def handleMessage(info):
@@ -551,8 +552,6 @@ def handleMessage(info):
         sender_chat_ids.append(x.id)
     for x in receiver_chats:
         receiver_chat_ids.append(x.id)
-    
-
 
     intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
     room = intersection[0]
@@ -567,6 +566,7 @@ def handleMessage(info):
     db.session.commit()
     emit('private_message', message.serialize(), json=True, to = str(room))
     return success_response(message.serialize())
+
 @socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
     """

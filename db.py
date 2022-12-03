@@ -112,7 +112,8 @@ class User(db.Model):
             "rating_as_poster": [r.simple_serialize() for r in self.rating_as_poster],
             "rating_as_postee":  [r.simple_serialize() for r in self.rating_as_postee],
             "chats": [c.simple_serialize() for c in self.chats],
-            "messages": [m.serialize() for m in self.messages]
+            "messages": [m.serialize() for m in self.messages],
+            "token": self.session_token
         }
 
     def simple_serialize(self):
@@ -305,7 +306,8 @@ class Job(db.Model):
         self.latitude = kwargs.get("latitude")
         self.done = False
         self.taken = False
-        self.images = [kwargs.get("asset")]
+        if not kwargs.get("asset") is None:
+            self.images = [kwargs.get("asset")]
     
     def serialize(self):
         """
