@@ -552,11 +552,6 @@ def handleMessage(info):
         sender_chat_ids.append(x.id)
     for x in receiver_chats:
         receiver_chat_ids.append(x.id)
-<<<<<<< HEAD
-
-    intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
-    room = intersection[0]
-=======
     
 
     intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
@@ -564,28 +559,19 @@ def handleMessage(info):
     room = intersection[0]
 
     
->>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
     message = Message(sender_id = info['sender_id'], chat = room, message = info['msg'])
     
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         emit('failure', 'chat not found')
-<<<<<<< HEAD
-        return
-=======
->>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
     time = datetime.datetime.now()
     chat.time = time
     db.session.add(message)
     db.session.commit()
-<<<<<<< HEAD
-    emit('private_message', message.serialize(), json=True, to = str(room))
-=======
     room = rooms()[len(rooms()) - 1]
     emit('private_message', message.serialize(), json=True, room = room)
     return success_response(message.serialize())
     
->>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
 
 @socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
@@ -614,15 +600,10 @@ def get_chat(info):
     messages = Chat.query.filter_by(id=room).first().messages
     new = [message.serialize() for message in messages.messages]
     #connect
-<<<<<<< HEAD
+
     join_room(str(room))
     emit('past_history' ,{'chat': new}, json=True, to=str(room))
-=======
-    room = rooms()[len(rooms()) - 1]
-    join_room(room)
-    emit('past_history' ,{'chat': new}, json=True, room=room)
     return success_response({'chat':new})
->>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
 
 @socketio.on('connect', namespace="/api/chat/")
 def connect():
