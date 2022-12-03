@@ -305,7 +305,7 @@ class Job(db.Model):
         self.latitude = kwargs.get("latitude")
         self.done = False
         self.taken = False
-        self.images = kwargs.get("asset")
+        self.images = [kwargs.get("asset")]
     
     def serialize(self):
         """
