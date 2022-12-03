@@ -357,7 +357,7 @@ def pick_receiver(job_id, user_id):
     
     return success_response(job.serialize(), 201)
 
-@app.route("/api/job/<int:job_id>/done", methods= ["POST"])
+@app.route("/api/job/<int:job_id>/done/", methods= ["POST"])
 def complete_job(job_id):
     """
     Endpoint for completing a job

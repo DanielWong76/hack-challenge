@@ -1,13 +1,14 @@
 Route: "/api/register/" method=POST
 Takes in a json with "email", "password", "first", "last", and "phone_number"
-fields and creates a new User.
+fields and creates and returns a new User.
 
 Route: "/api/login/" method=POST
 Takes in a json with "email" and "password" fields and logs a user in
-if the information is correct.
+if the information is correct. Returns user information
 
 Route: "/api/session/" method=POST
 Takes in a request with a users update token in the header and updates session
+Returns the session token, session expiration, and update token
 
 Route: "/api/secret/" method=GET
 Takes in a session token in the header and authenticates 
@@ -15,10 +16,46 @@ by returning a secret message
 
 Route: "/api/logout/" method=POST
 Takes in a session token in the header and logs the user out if
-the session token is valid
+the session token is valid. Returns a success or failure message
 
 Route: "/api/user/" method=GET
-Returns all users in the database
+Returns a json containing a list of all users in the database
+and the info that corresponds to the users
 
 Route: "/api/user/<int:user_id>/" method=POST
 Takes in a json with fields "first", "last", "email", and "phone_number"
+and updates the user with given user_id with these fields. Returns the user info
+
+Route: "/api/user/<int:user_id>/" method=GET
+Returns user info for the user specified by user_id
+
+Route: "/api/user/<int:user_id>/" method=DELETE
+Deletes and returns the user specified by user_id
+
+Route: "/api/asset/" method=GET
+Returns a json containing a list of all assets and their information
+
+Route: "/api/user/<int:user_id>/upload/" method=POST
+Takes in an "image_data" field containing the base64 encoding
+for an image that a user wants to upload to their profile
+Returns information about the image
+
+Route: "/api/asset/<int:asset_id>/" method=GET
+Returns image info corresponding to the asset_id
+
+Route: "/api/job/filter/" method=GET
+Takes in a "search" field and returns a json containing a list of
+jobs that are similar to the "search" field
+
+Route: "/api/job/" method=GET
+Returns a json containing a list of all jobs and info about the jobs
+
+Route: "/api/user/<int:user_id>/job/"
+Takes in "title", "description", "location", "date_activity", "duration",
+"reward", "category", "longtitude", and "latitude" and creates a job with this info
+Returns the newly created job
+
+Route: "/api/user/<int:user_id>/job/<int:job_id>/" method=POST
+Adds the user corresponding to user_id to a list of potential candidates for
+the job corresponding to job_id.
+Returns the user and info about user
