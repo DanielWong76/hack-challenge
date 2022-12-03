@@ -59,6 +59,7 @@ Route: "/api/user/<int:user_id>/job/<int:job_id>/" method=POST
 Adds the user corresponding to user_id to a list of potential candidates for
 the job corresponding to job_id.
 Returns the user and info about user
+
 Route: "/api/job/<int:job_id>/user/<int:user_id>/" method=POST
 Takes in job_id, user_id and updates the job with the user as the reciever
 Returns the serialize form of the job
