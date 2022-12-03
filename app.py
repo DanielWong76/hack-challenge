@@ -9,6 +9,7 @@ import users_dao
 import datetime
 from flask_socketio import SocketIO, emit, join_room, rooms
 from email_notif import send_email
+import base64
  
  
 app = Flask(__name__)
@@ -83,8 +84,6 @@ def register_account():
     send_email(to=email, subject="Registering an Account", content="Successful Registration! Yay!")
 
     return success_response(user_serialize, 201)
- 
- 
  
 @app.route("/api/login/", methods=["POST"])
 def login():
@@ -250,25 +249,6 @@ def upload_user(user_id):
     db.session.commit()
     return success_response(asset.serialize(), 201)
 
-@app.route("/api/job/<int:job_id>/upload/", methods=["POST"])
-def upload_job(job_id):
-    """
-    Endpoint for uploading an image to AWS given its base64 form,
-    then storing/returning the URL of that image for jobs
-    """
-    body = json.loads(request.data)
-    image_data = body.get("image_data")
-    job = Job.query.filter_by(id = job_id).first()
-    if job is None:
-        return failure_response("Jser not found!")
-    if image_data is None:
-        return failure_response("No base64 image found")
-    
-    asset = Asset(image_data = image_data, job_id = job_id)
-    db.session.add(asset)
-    db.session.commit()
-    return success_response(asset.serialize(), 201)
-
 @app.route("/api/asset/<int:asset_id>/")
 def get_asset(asset_id):
     """
@@ -317,9 +297,10 @@ def create_job(user_id):
     category = body.get("category")
     longtitude = body.get("longtitude")
     latitude = body.get("latitude")
+    asset = user.images[len(user.images)-1]
     if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None or longtitude is None or latitude is None:
         return failure_response("Missing one of the required fields", 400)
-    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category, longtitude = longtitude, latitude = latitude)
+    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category, longtitude = longtitude, latitude = latitude, asset=asset)
     db.session.add(job)
     db.session.commit()
     return success_response(job.serialize(), 201)
@@ -551,7 +532,7 @@ def create_chat(info):
     chat = Chat(users=[sender,receiver])
     db.session.add(chat)
     db.session.commit()
-    return success_response(chat.serialize())
+    emit('chat_created', chat.serialize(), json=True)
 
 
 @socketio.on('private_message', namespace="/api/chat/")
@@ -566,10 +547,16 @@ def handleMessage(info):
 
     sender_chat_ids = []
     receiver_chat_ids = []
+
     for x in sender_chats:
         sender_chat_ids.append(x.id)
     for x in receiver_chats:
         receiver_chat_ids.append(x.id)
+<<<<<<< HEAD
+
+    intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
+    room = intersection[0]
+=======
     
 
     intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
@@ -577,19 +564,28 @@ def handleMessage(info):
     room = intersection[0]
 
     
+>>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
     message = Message(sender_id = info['sender_id'], chat = room, message = info['msg'])
     
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         emit('failure', 'chat not found')
+<<<<<<< HEAD
+        return
+=======
+>>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
     time = datetime.datetime.now()
     chat.time = time
     db.session.add(message)
     db.session.commit()
+<<<<<<< HEAD
+    emit('private_message', message.serialize(), json=True, to = str(room))
+=======
     room = rooms()[len(rooms()) - 1]
     emit('private_message', message.serialize(), json=True, room = room)
     return success_response(message.serialize())
     
+>>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
 
 @socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
@@ -618,15 +614,20 @@ def get_chat(info):
     messages = Chat.query.filter_by(id=room).first().messages
     new = [message.serialize() for message in messages.messages]
     #connect
+<<<<<<< HEAD
+    join_room(str(room))
+    emit('past_history' ,{'chat': new}, json=True, to=str(room))
+=======
     room = rooms()[len(rooms()) - 1]
     join_room(room)
     emit('past_history' ,{'chat': new}, json=True, room=room)
     return success_response({'chat':new})
+>>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
 
 @socketio.on('connect', namespace="/api/chat/")
 def connect():
     print("user connected")
-    emit("connection succeeded", broadcast=True)
+    emit("connection_succeeded", "connected!")
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=8000, debug=True)
