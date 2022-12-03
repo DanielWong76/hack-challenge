@@ -340,6 +340,9 @@ def add_job(user_id, job_id):
     if user in job.potential:
         return failure_response("User already added this job!")
 
+    if user in job.poster:
+        return failure_response("You cannot add your own job")
+
     job.potential += [user]
     db.session.commit()
     return success_response(user.serialize(), 201)
