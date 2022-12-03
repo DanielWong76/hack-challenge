@@ -7,7 +7,7 @@ from flask import Flask, request
 import json
 import users_dao
 import datetime
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import SocketIO, emit, join_room, rooms
 from email_notif import send_email
 import base64
  
@@ -82,9 +82,6 @@ def register_account():
         return failure_response("User already exists", 400)
     user_serialize = user.serialize()
     send_email(to=email, subject="Registering an Account", content="Successful Registration! Yay!")
-    #user_serialize["session_token"] = user.session_token
-    #user_serialize["session_expiration"] = str(user.session_expiration)
-    #user_serialize["update_token"] = user.update_token
 
     return success_response(user_serialize, 201)
  
@@ -363,7 +360,6 @@ def complete_job(job_id):
         return failure_response("Job not found!")
     job.done = True
     db.session.commit()
-    print(job.poster[0].email)
     send_email( to=job.poster[0].email, subject=f"The side quest {job.title} has been complete", content=f"You side quest has been completed. Please reach out to {job.receiver[0].first}!")
 
     return success_response(job.serialize(), 201)
@@ -511,13 +507,13 @@ def get_chats(user_id):
     user = User.query.filter_by(id=user_id).first()
     if user is None:
         return failure_response("User not found!")
-    
-    new = []
-    chats = user.chats 
-    for x in chats:
-        new.append(x.serialize())
-    
-    return success_response(new)
+
+    new = [chat.serialize() for chat in user.chats]
+    res = []
+    for chat in new:
+        if len(chat.get("message")) > 0:
+            res.append(chat)
+    return success_response({"chat":res})
 
 @socketio.on('new_chat', namespace="/api/chat/")
 def create_chat(info):
@@ -553,20 +549,40 @@ def handleMessage(info):
         sender_chat_ids.append(x.id)
     for x in receiver_chats:
         receiver_chat_ids.append(x.id)
+<<<<<<< HEAD
 
     intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
     room = intersection[0]
+=======
+    
+
+    intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
+    
+    room = intersection[0]
+
+    
+>>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
     message = Message(sender_id = info['sender_id'], chat = room, message = info['msg'])
     
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         emit('failure', 'chat not found')
+<<<<<<< HEAD
         return
+=======
+>>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
     time = datetime.datetime.now()
     chat.time = time
     db.session.add(message)
     db.session.commit()
+<<<<<<< HEAD
     emit('private_message', message.serialize(), json=True, to = str(room))
+=======
+    room = rooms()[len(rooms()) - 1]
+    emit('private_message', message.serialize(), json=True, room = room)
+    return success_response(message.serialize())
+    
+>>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
 
 @socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
@@ -593,12 +609,17 @@ def get_chat(info):
     room = intersection[0]
 
     messages = Chat.query.filter_by(id=room).first().messages
-    new = []
-    for x in messages:
-        new.append(x.serialize())
+    new = [message.serialize() for message in messages.messages]
     #connect
+<<<<<<< HEAD
     join_room(str(room))
     emit('past_history' ,{'chat': new}, json=True, to=str(room))
+=======
+    room = rooms()[len(rooms()) - 1]
+    join_room(room)
+    emit('past_history' ,{'chat': new}, json=True, room=room)
+    return success_response({'chat':new})
+>>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95
 
 @socketio.on('connect', namespace="/api/chat/")
 def connect():
