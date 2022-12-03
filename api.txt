@@ -1,0 +1,24 @@
+Route: "/api/register/" method=POST
+Takes in a json with "email", "password", "first", "last", and "phone_number"
+fields and creates a new User.
+
+Route: "/api/login/" method=POST
+Takes in a json with "email" and "password" fields and logs a user in
+if the information is correct.
+
+Route: "/api/session/" method=POST
+Takes in a request with a users update token in the header and updates session
+
+Route: "/api/secret/" method=GET
+Takes in a session token in the header and authenticates 
+by returning a secret message
+
+Route: "/api/logout/" method=POST
+Takes in a session token in the header and logs the user out if
+the session token is valid
+
+Route: "/api/user/" method=GET
+Returns all users in the database
+
+Route: "/api/user/<int:user_id>/" method=POST
+Takes in a json with fields "first", "last", "email", and "phone_number"
