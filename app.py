@@ -603,5 +603,29 @@ def connect():
     print("user connected")
     emit("connection_succeeded", "connected!")
 
+
+@app.route("/api/chat/<int:chat_id>/", methods=["DELETE"])
+def delete_chat(chat_id):
+    """
+    Endpoint for deleting a chat by id
+    """
+    chat = Chat.query.filter_by(id = chat_id).first()
+    if chat is None:
+        return failure_response("Chat not found!")
+    db.session.delete(chat)
+    db.session.commit()
+    return success_response(chat.serialize())
+
+@app.route("/api/message/<int:message_id>/", methods=["DELETE"])
+def delete_message(message_id):
+    """
+    Endpoint for deleting a message by id
+    """
+    message = Message.query.filter_by(id = message_id).first()
+    if message is None:
+        return failure_response("Message not found!")
+    db.session.delete(message)
+    db.session.commit()
+    return success_response(message.serialize())
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=8000, debug=True)
