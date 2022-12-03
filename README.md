@@ -31,7 +31,8 @@ Relationships and Tables:
 
 EXTERNAL API USE:
 
-    We used SocketIO in our backend to allow messaging between users. Instead of updating whenever a request is sent, it listens for events. SocketIO interacted with out Chat and Message routes.
+    We used SocketIO in our backend to allow messaging between users. Instead of updating whenever a request is sent, it listens for events,
+    which allows for constant updates. SocketIO interacted with out Chat and Message routes.
 
     We used SendGridApi to send emails whenever a user registers, a user is chosen for a side quest, and when a job is done.
 

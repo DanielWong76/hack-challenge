@@ -164,7 +164,6 @@ def logout():
  
     return success_response({"message": "You have successfully logged out"})
 
-
 @app.route("/api/user/")
 def get_users():
     """
@@ -602,7 +601,6 @@ def get_chat(info):
 def connect():
     print("user connected")
     emit("connection_succeeded", "connected!")
-
 
 @app.route("/api/chat/<int:chat_id>/", methods=["DELETE"])
 def delete_chat(chat_id):
