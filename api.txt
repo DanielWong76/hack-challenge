@@ -22,3 +22,54 @@ Returns all users in the database
 
 Route: "/api/user/<int:user_id>/" method=POST
 Takes in a json with fields "first", "last", "email", and "phone_number"
+
+Route: "/api/job/<int:job_id>/user/<int:user_id>/" method=POST
+Takes in job_id, user_id and updates the job with the user as the reciever
+Returns the serialize form of the job
+
+Route: "/api/job/<int:job_id>/done/" method=POST
+Takes in job_id and updates the job as completed
+Returns the serialize form of the job
+
+Route: "/api/job/<int:job_id>/" method=POST
+Takes in job_id and a json with all the job information and updates a job
+Returns the serialize form of the job
+
+Route: "/api/job/<int:job_id>/" method=GET
+Takes in job_id and returns that job
+Returns the serialize form of the job
+
+Route: "/api/job/<int:job_id>/" method=DELETE
+Takes in job_id and deletes job
+Returns the serialize form of the deleted job
+
+Route: "/api/rating/" method=GET
+Returns the serialize form of all rating as a list
+
+Route: "/api/user/<int:user_id>/rating/<int:user2_id>/" method=POST
+Takes in rating_id, user_id and a json with all the rating information and creates a rating
+Returns the serialize form of the rating
+
+Route: "/api/user/<int:user_id>/rating/<int:rating_id>/" method=POST
+Takes in rating_id, user_id and a json with all the rating information and updates a rating
+Returns the serialize form of the rating
+
+Route: "/api/rating/<int:rating_id>/" method=GET
+Takes in rating_id and returns that rating
+Returns the serialize form of the rating
+
+Route: "/api/rating/<int:rating_id>/" method=DELETE
+Takes in rating_id and deletes rating
+Returns the serialize form of the deleted rating
+
+Route: "/api/chat/<int:chat_id>/" method=GET
+Takes in chat_id and returns that chat
+Returns the serialize form of the chat
+
+Route: "/api/chat/<int:chat_id>/" method=DELETE
+Takes in chat_id and deletes chat
+Returns the serialize form of the deleted chat
+
+Route: "/api/message/<int:message_id>/" method=DELETE
+Takes in message_id and deletes message
+Returns the serialize form of the deleted message
