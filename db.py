@@ -305,7 +305,7 @@ class Job(db.Model):
         self.latitude = kwargs.get("latitude")
         self.done = False
         self.taken = False
-        self.images = kwargs.get("asset")
+        self.images = [kwargs.get("asset")]
     
     def serialize(self):
         """
@@ -456,7 +456,6 @@ class Message(db.Model):
             "chat_id": self.chat_id,
             "message": self.message,
             "time": str(self.time)
-<<<<<<< HEAD
         }
     
 
@@ -465,6 +464,3 @@ class Message(db.Model):
 
 
 
-=======
-        }
->>>>>>> b62931c3ea4286faeff3170c17a305205b0b4e95

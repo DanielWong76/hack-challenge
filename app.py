@@ -320,6 +320,9 @@ def add_job(user_id, job_id):
     if user in job.potential:
         return failure_response("User already added this job!")
 
+    if user in job.poster:
+        return failure_response("You cannot add your own job")
+
     job.potential += [user]
     db.session.commit()
     return success_response(user.serialize(), 201)
@@ -548,6 +551,8 @@ def handleMessage(info):
         sender_chat_ids.append(x.id)
     for x in receiver_chats:
         receiver_chat_ids.append(x.id)
+    
+
 
     intersection = [value for value in sender_chat_ids if value in receiver_chat_ids]
     room = intersection[0]
@@ -556,13 +561,12 @@ def handleMessage(info):
     chat = Chat.query.filter_by(id = room).first()
     if chat is None:
         emit('failure', 'chat not found')
-        return
     time = datetime.datetime.now()
     chat.time = time
     db.session.add(message)
     db.session.commit()
     emit('private_message', message.serialize(), json=True, to = str(room))
-
+    return success_response(message.serialize())
 @socketio.on('join', namespace="/api/chat/")
 def get_chat(info):
     """
@@ -592,6 +596,7 @@ def get_chat(info):
     #connect
     join_room(str(room))
     emit('past_history' ,{'chat': new}, json=True, to=str(room))
+    return success_response({'chat':new})
 
 @socketio.on('connect', namespace="/api/chat/")
 def connect():
