@@ -11,7 +11,9 @@ Our backend database features 6 classes: User, Asset, Job, Rating, Chat, and Mes
 
 The User class contains information relating to logging into the app and information relating to a person's profile. We fulfilled the requirement of having authentication with this class.
 
-The Asset classes implements images, which gives the user the ability to add a profile picture and add images to a job. 
+The Asset classes implements images, which gives the user the ability to add a profile picture.
+
+
 
 
 
