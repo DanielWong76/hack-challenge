@@ -110,3 +110,24 @@ Returns the serialize form of the deleted chat
 Route: "/api/message/<int:message_id>/" method=DELETE
 Takes in message_id and deletes message
 Returns the serialize form of the deleted message
+
+Websocket: Connect to websocket with "ws://34.85.181.121/api/chat/"
+Listen for: 'connect'
+Sends the string "connected!" to event listening for "connection_succeeded"
+
+Listen for: 'join'
+Takes in a json with fields "user1_id" and "user2_id" which tells us which
+chat is being joined. Also puts the user in a room corresponding to the chat id
+Sends a json containing a list of messages in the chat between the two users
+to the event listening for 'past_history' and to the room of the chat id
+
+Listen for: 'private_message'
+Takes in a json containing the fields 'sender_id', 'receiver_id', and 'msg'
+Creates message and adds it to the chat.
+Sends the serialized message to the event listening for 'private_message'
+and to the room corresponding to the chat id.
+
+Listen for: 'new_chat'
+Takes in a json with fields "sender_id" and "receiver_id" and creates a new chat object
+corresponding to these users. 
+Sends the serialized chat to the event listening for 'chat_created'
