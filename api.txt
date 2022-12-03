@@ -131,3 +131,5 @@ Listen for: 'new_chat'
 Takes in a json with fields "sender_id" and "receiver_id" and creates a new chat object
 corresponding to these users. 
 Sends the serialized chat to the event listening for 'chat_created'
+
+First create chat, then join, then you can send private messages
