@@ -295,13 +295,15 @@ def create_job(user_id):
     category = body.get("category")
     longtitude = body.get("longtitude")
     latitude = body.get("latitude")
+    other_notes = body.get("other_notes")
+    relevant_skills = body.get("relevant_skills")
     if len(user.images) > 0:
         asset = user.images[len(user.images)-1]
     else:
         asset = None
-    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None or longtitude is None or latitude is None:
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or category is None or longtitude is None or latitude is None or relevant_skills is None:
         return failure_response("Missing one of the required fields", 400)
-    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category, longtitude = longtitude, latitude = latitude, asset=asset)
+    job = Job(title = title, description = description, location = location, date_activity =date_activity, duration=duration, reward=reward, poster = user, category = category, longtitude = longtitude, latitude = latitude, asset=asset, relevant_skills=relevant_skills, other_notes=other_notes)
     db.session.add(job)
     db.session.commit()
     return success_response(job.serialize(), 201)
@@ -389,7 +391,10 @@ def update_job(job_id):
     reward = body.get("reward")
     longtitude = body.get("longtitude")
     latitude = body.get("latitude")
-    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or longtitude is None or latitude is None:
+    other_notes = body.get("other_notes")
+    relevant_skills = body.get("relevant_skills")
+    category = body.get("category")
+    if title is None or description is None or  location is None or  date_activity is None or duration is None or reward is None or longtitude is None or latitude is None or relevant_skills is None or category is None:
         return failure_response("Missing one of the required fields", 400)
     job.title = title 
     job.description = description 
@@ -399,6 +404,9 @@ def update_job(job_id):
     job.reward = reward 
     job.longtitude = longtitude
     job.latitude = latitude
+    job.other_notes = other_notes
+    job.relevant_skills = relevant_skills
+    job.category = category
     db.session.commit()
     return success_response(job.serialize(), 201)
 

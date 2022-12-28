@@ -288,6 +288,8 @@ class Job(db.Model):
     images = db.relationship("Asset", cascade="delete")
     potential = db.relationship("User", secondary=association_table_potential, back_populates='job_as_potential')
     category = db.Column(db.String, nullable = False)
+    other_notes = db.Column(db.String, nullable = True)
+    relevant_skills = db.Column(db.String, nullable = False)
 
     def __init__(self, **kwargs):
         """
@@ -306,6 +308,8 @@ class Job(db.Model):
         self.latitude = kwargs.get("latitude")
         self.done = False
         self.taken = False
+        self.relevant_skills = kwargs.get("relevant_skills")
+        self.other_notes = kwargs.get("other_notes")
         if not kwargs.get("asset") is None:
             self.images = [kwargs.get("asset")]
     
@@ -327,6 +331,8 @@ class Job(db.Model):
             "category": self.category,
             "longtitude": self.longtitude,
             "latitude": self.latitude,
+            "relevant_skills": self.relevant_skills,
+            "other_notes": self.other_notes,
             "asset": [i.serialize() for i in self.images],
             "poster": [p.simple_serialize() for p in self.poster],
             "receiver": [r.simple_serialize() for r in self.receiver],
