@@ -1,6 +1,8 @@
 # hack-challenge
 Repository for 2022 Hack Challenge
 
+IOS REPO:
+
 APP NAME: Side Quest
 
 TAGLINE: App for students to make easy money by connecting them to organizations/people offering rewards for gigs, research participation, surveys, etc.
