@@ -162,6 +162,9 @@ class User(db.Model):
         """
         return update_token == self.update_token
 
+    def get_img(self):
+        return [i.serialize() for i in self.images]
+
 
 #-----------------IMAGES--------------------------------------------
 
@@ -333,7 +336,7 @@ class Job(db.Model):
             "latitude": self.latitude,
             "relevant_skills": self.relevant_skills,
             "other_notes": self.other_notes,
-            "asset": [i.serialize() for i in self.images],
+            "asset": [i.get_img() for i in self.poster],
             "poster": [p.simple_serialize() for p in self.poster],
             "receiver": [r.simple_serialize() for r in self.receiver],
             "potential": [p.simple_serialize() for p in self.potential]
